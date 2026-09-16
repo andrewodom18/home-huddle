@@ -68,29 +68,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visibl
 .site-header__actions { display: flex; align-items: center; gap: 10px; }
 .header-page-link { display: none; }
 .brand-mark {
-  position: relative;
   width: 31px;
   height: 31px;
-  display: grid;
-  place-items: center;
-}
-.brand-mark > span {
-  width: 24px;
-  height: 24px;
-  border: 3px solid #76d8ff;
-  border-right-color: #8a97ff;
-  border-radius: 50%;
-  transform: rotate(-28deg);
-}
-.brand-mark::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 9px;
-  width: 15px;
-  height: 6px;
-  border-bottom: 2px solid #76d8ff;
-  border-radius: 50%;
+  display: block;
+  flex: none;
 }
 
 .reset-button {
@@ -644,7 +625,6 @@ main { flex: 1; width: 100%; }
 }
 @media (max-width: 440px) {
   .brand-mark { width: 25px; height: 25px; }
-  .brand-mark > span { width: 21px; height: 21px; }
   .home-huddle-conversation--welcome .cdk-composer,
   .home-huddle-conversation--active .cdk-composer { grid-template-columns: 21px minmax(0,1fr) auto auto; gap: 3px; padding: 5px 6px 5px 13px; }
   .home-huddle-conversation--welcome .cdk-composer::before,

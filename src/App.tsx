@@ -264,9 +264,14 @@ export default function App() {
           className='brand'
           href={isAboutPage ? './' : '#top'}
         >
-          <span aria-hidden='true' className='brand-mark'>
-            <span />
-          </span>
+          <img
+            alt=''
+            aria-hidden='true'
+            className='brand-mark'
+            height='31'
+            src={`${import.meta.env.BASE_URL}favicon.svg`}
+            width='31'
+          />
           <strong>Home Huddle</strong>
         </a>
         <div className='site-header__actions'>

@@ -43,8 +43,9 @@ function jsonResponse(body: unknown, status = 200) {
 
 describe("Home Huddle", () => {
   it("shows a reliable text experience when voice input is unavailable", () => {
-    render(<App />);
+    const { container } = render(<App />);
 
+    expect(container.querySelector(".brand-mark")).toHaveAttribute("src", "/favicon.svg");
     expect(
       screen.getByRole("button", {
         name: "Voice input unavailable in this browser",
