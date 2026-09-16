@@ -12,8 +12,9 @@ import type {
   HouseholdPlan,
 } from "../shared/contracts";
 import { ChatApiError, sendChat } from "./api";
+import { AboutPage } from "./AboutPage";
 import { EvidencePanel } from "./EvidencePanel";
-import { CalendarIcon, ConversationIcon, HomeIcon, InfoIcon, MicIcon, ResetIcon } from "./icons";
+import { CalendarIcon, HomeIcon, InfoIcon, MicIcon, ResetIcon } from "./icons";
 import { PlanBoard } from "./PlanBoard";
 import { PRESET_SCENARIOS, REVISION_PROMPTS } from "./presets";
 import { useSpeechRecognition } from "./useSpeechRecognition";
@@ -53,7 +54,9 @@ function loadState(): StoredState {
       return { messages: [WELCOME_MESSAGE] };
     }
     return {
-      messages: stored.messages.slice(-13),
+      messages: stored.messages.slice(-13).map((message) =>
+        message.contextText ? { ...message, text: message.contextText } : message,
+      ),
       plan: stored.plan,
       meta: stored.meta,
     };
@@ -113,7 +116,12 @@ export default function App() {
   const [pending, setPending] = useState(false);
   const [failure, setFailure] = useState<FailedRequest | null>(null);
   const requestId = useRef(0);
+  const isAboutPage = new URLSearchParams(window.location.search).get("page") === "about";
   const speech = useSpeechRecognition((transcript) => setInput(transcript));
+
+  useEffect(() => {
+    document.title = isAboutPage ? "About Home Huddle" : "Home Huddle — Make room for everyone";
+  }, [isAboutPage]);
 
   useEffect(() => {
     window.localStorage.setItem(
@@ -167,7 +175,7 @@ export default function App() {
     }
   }
 
-  function submitMessage(value: string, displayText?: string) {
+  function submitMessage(value: string) {
     const message = value.trim();
     if (!message || pending) return;
 
@@ -178,7 +186,7 @@ export default function App() {
     };
     setMessages((current) => [
       ...current,
-      { id: createId(), role: "user", text: displayText ?? message, contextText: displayText ? message : undefined },
+      { id: createId(), role: "user", text: message },
     ]);
     setInput("");
     void execute(request);
@@ -244,26 +252,30 @@ export default function App() {
   );
 
   return (
-    <div className={`app-shell ${hasConversation ? "app-shell--active" : "app-shell--welcome"}`}>
-      <a className="skip-link" href="#main-content">Skip to planning</a>
+    <div className={`app-shell ${isAboutPage ? "app-shell--about" : hasConversation ? "app-shell--active" : "app-shell--welcome"}`}>
+      <a className="skip-link" href="#main-content">Skip to main content</a>
       <header className="site-header">
-        <a aria-label="Home Huddle home" className="brand" href="#top">
+        <a aria-label="Home Huddle home" className="brand" href={isAboutPage ? "./" : "#top"}>
           <span aria-hidden="true" className="brand-mark"><span /></span>
           <strong>Home Huddle</strong>
         </a>
-        <button aria-label="New plan" className="reset-button" onClick={reset} title="New plan" type="button">
-          <ResetIcon />
-        </button>
+        <div className="site-header__actions">
+          {!isAboutPage && <button aria-label="New plan" className="reset-button" onClick={reset} title="New plan" type="button">
+            <ResetIcon />
+          </button>}
+          <a className="header-page-link" href={isAboutPage ? "./" : "?page=about"}>
+            {isAboutPage ? "Plan" : "About"}
+          </a>
+        </div>
       </header>
 
       <nav aria-label="Page sections" className="side-rail">
-        <a aria-label="Start" href="#top" title="Start"><HomeIcon /></a>
-        <a aria-label="Conversation" href={hasConversation ? "#conversation" : "#cdk-message-input"} title="Conversation"><ConversationIcon /></a>
-        {plan && <a aria-label="Calendar" href="#calendar" title="Calendar"><CalendarIcon /></a>}
-        <a aria-label="About this demo" href="#about" title="About this demo"><InfoIcon /></a>
+        <a aria-label="Start" aria-current={!isAboutPage ? "page" : undefined} href={isAboutPage ? "./" : "#top"} title="Start"><HomeIcon /></a>
+        {!isAboutPage && plan && <a aria-label="Calendar" href="#calendar" title="Calendar"><CalendarIcon /></a>}
+        <a aria-label="About this demo" aria-current={isAboutPage ? "page" : undefined} href={isAboutPage ? "#main-content" : "?page=about"} title="About this demo"><InfoIcon /></a>
       </nav>
 
-      <main id="main-content">
+      {isAboutPage ? <AboutPage /> : <main id="main-content">
         <section aria-label="Home Huddle conversation" className="alexa-stage" id="top">
           {!hasConversation && <h1>Hello, how can we plan together?</h1>}
           {hasConversation && <h1 className="screen-reader-only">Your household conversation</h1>}
@@ -287,7 +299,7 @@ export default function App() {
                     className="scenario-chip"
                     disabled={pending}
                     key={scenario.id}
-                    onClick={() => submitMessage(scenario.prompt, scenario.title)}
+                    onClick={() => submitMessage(scenario.prompt)}
                     title={scenario.description}
                     type="button"
                   >
@@ -321,9 +333,9 @@ export default function App() {
           <PlanBoard plan={plan} />
           {meta && <EvidencePanel meta={meta} />}
         </section>}
-      </main>
+      </main>}
 
-      <footer className="site-footer" id="about">
+      <footer className="site-footer">
         <span>Home Huddle is an independent Alexa+ concept for the Amazon Developer Hackathon.</span>
         <span>Powered by Amazon Bedrock · Use fictional details · Plans stay on this device</span>
       </footer>

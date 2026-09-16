@@ -1,8 +1,9 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import type { ChatResponse, HouseholdPlan } from "../shared/contracts";
+import { chatRequestSchema, type ChatResponse, type HouseholdPlan } from "../shared/contracts";
 import App from "./App";
+import { PRESET_SCENARIOS } from "./presets";
 
 const plan: HouseholdPlan = {
   title: "A calmer evening",
@@ -52,6 +53,49 @@ describe("Home Huddle", () => {
     expect(screen.getByLabelText("Message")).toBeEnabled();
     expect(screen.queryByRole("region", { name: "Household calendar" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Calendar" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Conversation" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "About this demo" })).toHaveAttribute("href", "?page=about");
+  });
+
+  it.each(PRESET_SCENARIOS)("shows and sends the complete $title scenario", async (scenario) => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      void input;
+      void init;
+      return jsonResponse({ ...success, plan: undefined });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: `${scenario.title}. ${scenario.description}` }));
+
+    expect(screen.getByLabelText("user message")).toHaveTextContent(scenario.prompt);
+    await screen.findByText(success.reply);
+    const request = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+    expect(request.message).toBe(scenario.prompt);
+    expect(chatRequestSchema.safeParse(request).success).toBe(true);
+  });
+
+  it("expands older shortened scenario messages when restoring a conversation", () => {
+    window.localStorage.setItem("home-huddle-state-v1", JSON.stringify({
+      messages: [{ id: "preset", role: "user", text: "Dinner + homework", contextText: PRESET_SCENARIOS[0].prompt }],
+    }));
+
+    render(<App />);
+
+    expect(screen.getByLabelText("user message")).toHaveTextContent(PRESET_SCENARIOS[0].prompt);
+  });
+
+  it("opens a dedicated About view instead of an empty footer anchor", () => {
+    window.history.replaceState(null, "", "/?page=about");
+
+    render(<App />);
+
+    expect(screen.getByRole("heading", { name: "Make room for everyone’s day." })).toBeInTheDocument();
+    expect(document.title).toBe("About Home Huddle");
+    expect(screen.queryByRole("textbox", { name: "Message" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Start planning/i })).toHaveAttribute("href", "./");
+    expect(screen.getByRole("link", { name: "About this demo" })).toHaveAttribute("aria-current", "page");
   });
 
   it("runs a preset and renders the resulting Bedrock plan", async () => {

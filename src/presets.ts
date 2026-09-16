@@ -23,7 +23,7 @@ export const PRESET_SCENARIOS: PresetScenario[] = [
     title: "Share the chores",
     description: "Divide the work fairly and leave time for a break.",
     prompt:
-      "Split Saturday chores between Alex, Sam, and Riley from 9:00 AM to 11:00 AM. The kitchen needs 35 minutes, laundry needs two 20-minute steps, floors need 30 minutes, and Riley can only do light tasks. Include one shared 15-minute break.",
+      "Split Saturday chores fairly between Alex, Sam, and Riley from 9:00 AM to 11:00 AM. Clean the kitchen (35 minutes), vacuum the floors (30 minutes), sort and start a small laundry load (20 minutes), and fold and put away a ready load (20 minutes). Both laundry tasks are light enough for Riley; do not give Riley heavy chores. Aim for 30 to 40 minutes of chores per person and include the same shared 15-minute break for everyone.",
     tone: "coral",
   },
   {
@@ -32,7 +32,7 @@ export const PRESET_SCENARIOS: PresetScenario[] = [
     title: "Accessible outing",
     description: "Create a comfortable plan with travel and rest buffers.",
     prompt:
-      "Plan a family outing for Noor, Eli, and Grandma Jo from 10:00 AM to 2:00 PM. Travel takes 25 minutes each way, lunch needs 45 minutes, Grandma Jo needs a seated break every hour, and everyone wants at least 75 minutes at the botanical garden.",
+      "Plan a comfortable family outing for Noor, Eli, and Grandma Jo from 10:00 AM to 2:00 PM. Everyone travels to and from the botanical garden (25 minutes each way), spends 75 minutes there together, and has a 45-minute lunch. Add two separate 10-minute seated breaks for Grandma Jo, one before lunch and one after. Finish the return trip by 2:00 PM; unused time can stay free.",
     tone: "lime",
   },
 ];

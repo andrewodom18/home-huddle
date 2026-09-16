@@ -34,6 +34,7 @@ beforeEach(() => {
   vi.restoreAllMocks();
   if (typeof window !== "undefined") {
     window.localStorage.clear();
+    window.history.replaceState(null, "", "/");
     delete window.SpeechRecognition;
     delete window.webkitSpeechRecognition;
   }
