@@ -252,92 +252,168 @@ export default function App() {
   );
 
   return (
-    <div className={`app-shell ${isAboutPage ? "app-shell--about" : hasConversation ? "app-shell--active" : "app-shell--welcome"}`}>
-      <a className="skip-link" href="#main-content">Skip to main content</a>
-      <header className="site-header">
-        <a aria-label="Home Huddle home" className="brand" href={isAboutPage ? "./" : "#top"}>
-          <span aria-hidden="true" className="brand-mark"><span /></span>
+    <div
+      className={`app-shell ${isAboutPage ? 'app-shell--about' : hasConversation ? 'app-shell--active' : 'app-shell--welcome'}`}
+    >
+      <a className='skip-link' href='#main-content'>
+        Skip to main content
+      </a>
+      <header className='site-header'>
+        <a
+          aria-label='Home Huddle home'
+          className='brand'
+          href={isAboutPage ? './' : '#top'}
+        >
+          <span aria-hidden='true' className='brand-mark'>
+            <span />
+          </span>
           <strong>Home Huddle</strong>
         </a>
-        <div className="site-header__actions">
-          {!isAboutPage && <button aria-label="New plan" className="reset-button" onClick={reset} title="New plan" type="button">
-            <ResetIcon />
-          </button>}
-          <a className="header-page-link" href={isAboutPage ? "./" : "?page=about"}>
-            {isAboutPage ? "Plan" : "About"}
+        <div className='site-header__actions'>
+          {!isAboutPage && (
+            <button
+              aria-label='New plan'
+              className='reset-button'
+              onClick={reset}
+              title='New plan'
+              type='button'
+            >
+              <ResetIcon />
+            </button>
+          )}
+          <a
+            className='header-page-link'
+            href={isAboutPage ? './' : '?page=about'}
+          >
+            {isAboutPage ? 'Plan' : 'About'}
           </a>
         </div>
       </header>
 
-      <nav aria-label="Page sections" className="side-rail">
-        <a aria-label="Start" aria-current={!isAboutPage ? "page" : undefined} href={isAboutPage ? "./" : "#top"} title="Start"><HomeIcon /></a>
-        {!isAboutPage && plan && <a aria-label="Calendar" href="#calendar" title="Calendar"><CalendarIcon /></a>}
-        <a aria-label="About this demo" aria-current={isAboutPage ? "page" : undefined} href={isAboutPage ? "#main-content" : "?page=about"} title="About this demo"><InfoIcon /></a>
+      <nav aria-label='Page sections' className='side-rail'>
+        <a
+          aria-label='Start'
+          aria-current={!isAboutPage ? 'page' : undefined}
+          href={isAboutPage ? './' : '#top'}
+          title='Start'
+        >
+          <HomeIcon />
+        </a>
+        {!isAboutPage && plan && (
+          <a aria-label='Calendar' href='#calendar' title='Calendar'>
+            <CalendarIcon />
+          </a>
+        )}
+        <a
+          aria-label='About this demo'
+          aria-current={isAboutPage ? 'page' : undefined}
+          href={isAboutPage ? '#main-content' : '?page=about'}
+          title='About this demo'
+        >
+          <InfoIcon />
+        </a>
       </nav>
 
-      {isAboutPage ? <AboutPage /> : <main id="main-content">
-        <section aria-label="Home Huddle conversation" className="alexa-stage" id="top">
-          {!hasConversation && <h1>Hello, how can we plan together?</h1>}
-          {hasConversation && <h1 className="screen-reader-only">Your household conversation</h1>}
-          <div className="stage-conversation" id="conversation">
-            {conversation}
-            <span aria-hidden="true" className="send-hint">Send message</span>
-          </div>
-          {errorBanner}
-          {(pending || speech.listening) && (
-            <p className="conversation-feedback" role="status">
-              {pending ? "Planning your schedule…" : "Listening for your message…"}
-            </p>
-          )}
-          {!hasConversation && (
-            <section aria-label="Example scenarios" className="scenario-section">
-              <h2 className="screen-reader-only">Try a starting point</h2>
-              <div className="scenario-grid">
-                {PRESET_SCENARIOS.map((scenario) => (
-                  <button
-                    aria-label={`${scenario.title}. ${scenario.description}`}
-                    className="scenario-chip"
-                    disabled={pending}
-                    key={scenario.id}
-                    onClick={() => submitMessage(scenario.prompt)}
-                    title={scenario.description}
-                    type="button"
-                  >
-                    <span>{scenario.title}</span>
-                    <span aria-hidden="true" className="scenario-chip__arrow">→</span>
-                  </button>
-                ))}
+      {isAboutPage ? (
+        <AboutPage />
+      ) : (
+        <main id='main-content'>
+          <section
+            aria-label='Home Huddle conversation'
+            className='alexa-stage'
+            id='top'
+          >
+            {!hasConversation && <h1>Hello, how can we plan together?</h1>}
+            {hasConversation && (
+              <h1 className='screen-reader-only'>
+                Your household conversation
+              </h1>
+            )}
+            <div className='stage-conversation' id='conversation'>
+              {conversation}
+              <span aria-hidden='true' className='send-hint'>
+                Send message
+              </span>
+            </div>
+            {errorBanner}
+            {(pending || speech.listening) && (
+              <p className='conversation-feedback' role='status'>
+                {pending
+                  ? 'Planning your schedule…'
+                  : 'Listening for your message…'}
+              </p>
+            )}
+            {!hasConversation && (
+              <section
+                aria-label='Example scenarios'
+                className='scenario-section'
+              >
+                <h2 className='screen-reader-only'>Try a starting point</h2>
+                <div className='scenario-grid'>
+                  {PRESET_SCENARIOS.map((scenario) => (
+                    <button
+                      aria-label={`${scenario.title}. ${scenario.description}`}
+                      className='scenario-chip'
+                      disabled={pending}
+                      key={scenario.id}
+                      onClick={() => submitMessage(scenario.prompt)}
+                      title={scenario.description}
+                      type='button'
+                    >
+                      <span>{scenario.title}</span>
+                      <span aria-hidden='true' className='scenario-chip__arrow'>
+                        →
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
+            {hasConversation && revisionSuggestions.length > 0 && (
+              <PromptChips
+                disabled={pending}
+                label='Suggested plan revisions'
+                onSelect={setInput}
+                suggestions={revisionSuggestions}
+              />
+            )}
+            <div aria-live='polite' className='calendar-prompt'>
+              {plan && (
+                <a href='#calendar'>
+                  View shared calendar <span aria-hidden='true'>↓</span>
+                </a>
+              )}
+            </div>
+            {hasConversation && meta && !plan && <EvidencePanel meta={meta} />}
+          </section>
+
+          {plan && (
+            <section
+              aria-label='Household calendar'
+              className='calendar-section'
+              id='calendar'
+            >
+              <div className='calendar-section__heading'>
+                <span className='section-kicker'>Calendar</span>
+                <h2>Your day, in one place.</h2>
+                <p>
+                  See the plan at a glance, then keep the conversation going
+                  when life changes.
+                </p>
               </div>
+              <PlanBoard plan={plan} />
+              {meta && <EvidencePanel meta={meta} />}
             </section>
           )}
-          {hasConversation && revisionSuggestions.length > 0 && (
-            <PromptChips
-              disabled={pending}
-              label="Suggested plan revisions"
-              onSelect={setInput}
-              suggestions={revisionSuggestions}
-            />
-          )}
-          <div aria-live="polite" className="calendar-prompt">
-            {plan && <a href="#calendar">View shared calendar <span aria-hidden="true">↓</span></a>}
-          </div>
-          {hasConversation && meta && !plan && <EvidencePanel meta={meta} />}
-        </section>
+        </main>
+      )}
 
-        {plan && <section aria-label="Household calendar" className="calendar-section" id="calendar">
-          <div className="calendar-section__heading">
-            <span className="section-kicker">Calendar</span>
-            <h2>Your day, in one place.</h2>
-            <p>See the plan at a glance, then keep the conversation going when life changes.</p>
-          </div>
-          <PlanBoard plan={plan} />
-          {meta && <EvidencePanel meta={meta} />}
-        </section>}
-      </main>}
-
-      <footer className="site-footer">
-        <span>Home Huddle is an independent Alexa+ concept for the Amazon Developer Hackathon.</span>
-        <span>Powered by Amazon Bedrock · Use fictional details · Plans stay on this device</span>
+      <footer className='site-footer'>
+        <span>
+          Home Huddle is an independent Alexa+ concept for the Amazon Developer
+          Hackathon.
+        </span>
+        <span>Powered by Amazon Bedrock · For demo purposes only</span>
       </footer>
     </div>
   );
