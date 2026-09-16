@@ -1,0 +1,17 @@
+node_modules/
+dist/
+dist-server/
+dist-lambda/
+dist-pages/
+coverage/
+.playwright-cli/
+.env
+.env.*
+!.env.example
+.DS_Store
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+conversation-display-kit/

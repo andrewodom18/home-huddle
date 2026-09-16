@@ -1,0 +1,58 @@
+{
+  "name": "home-huddle",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "npm run typecheck && vite build && vite build --ssr server/index.ts --outDir dist-server && npm run build:lambda",
+    "build:lambda": "esbuild server/lambda.ts --bundle --platform=node --target=node22 --format=cjs --outfile=dist-lambda/index.js",
+    "package:lambda": "npm run build:lambda && rm -f dist-lambda/function.zip && cd dist-lambda && zip -q -X function.zip index.js",
+    "build:pages": "npm run typecheck && vite build --outDir dist-pages",
+    "dev": "concurrently -k -n api,web -c blue,green \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "tsx watch server/index.ts",
+    "dev:web": "vite",
+    "lint": "eslint .",
+    "smoke:bedrock": "LIVE_BEDROCK=1 vitest run server/bedrock.live.test.ts",
+    "start": "node dist-server/index.js",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.1133.0",
+    "@aws-sdk/client-dynamodb": "^3.1133.0",
+    "conversation-display-kit": "https://github.com/andrewodom18/conversation-display-kit/releases/download/v0.1.1/conversation-display-kit-0.1.1.tgz",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "zod": "^4.1.8"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.3.1",
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
+    "@types/supertest": "^6.0.3",
+    "@vitejs/plugin-react": "^5.0.2",
+    "concurrently": "^9.2.1",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.10.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "globals": "^16.3.0",
+    "jsdom": "^30.0.1",
+    "supertest": "^7.1.4",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.70.0",
+    "vite": "^7.1.5",
+    "vitest": "^5.0.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Install from a fresh npm cache
+        run: npm ci --cache "$RUNNER_TEMP/home-huddle-npm"
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Verify packaged Lambda cold start
+        run: |
+          npm run package:lambda
+          mkdir -p "$RUNNER_TEMP/home-huddle-lambda"
+          unzip -q dist-lambda/function.zip -d "$RUNNER_TEMP/home-huddle-lambda"
+          node -e 'const { handler } = require(process.argv[1]); handler({ requestContext: { http: { method: "POST" } }, headers: { origin: "https://invalid.example" } }).then((response) => { if (response.statusCode !== 403) process.exit(1); });' "$RUNNER_TEMP/home-huddle-lambda/index.js"
