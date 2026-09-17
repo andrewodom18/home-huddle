@@ -112,8 +112,7 @@ function uses an execution role and does not need a bearer key.
 The public page is built for GitHub Pages and calls a Lambda Function URL.
 The Lambda uses IAM to invoke Bedrock and a DynamoDB transaction to reserve
 each model call. The live demo is set to 50 calls/day and 500 calls/month,
-shared by all visitors. A $1 monthly AWS budget sends email alerts at 80% and
-100% of the threshold; alerts do not stop charges.
+shared by all visitors.
 See the [serverless deployment guide](deploy/serverless/README.md) for the
 repeatable Terraform setup. Cloning or building the repository creates no AWS
 resources.
