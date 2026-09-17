@@ -1,8 +1,7 @@
 # Home Huddle — Submission Draft
 
-This file collects the copy, evidence, feedback, and demo sequence needed for
-the Amazon Developer Hackathon submission. Complete the final verification
-checkboxes after testing the public demo and recording the video.
+This file collects the evidence, feedback, and demo sequence completed for
+the Amazon Developer Hackathon submission.
 
 ## Project description
 
@@ -49,9 +48,6 @@ is required for this Alexa+ simulation path.
   MIT-licensed React project released during the hackathon. Home Huddle pins
   its `v0.2.0` release asset, including the accessible ChangeReviewCard.
 
-The project enters both mini challenges while acknowledging that one project
-can win at most one mini-challenge prize.
-
 ## Required links
 
 - GitHub username: `andrewodom18`
@@ -61,7 +57,7 @@ can win at most one mini-challenge prize.
 - Open-source contribution/release URL:
   https://github.com/andrewodom18/conversation-display-kit/releases/tag/v0.2.0
 - Live demo: https://andrewodom18.github.io/home-huddle/
-- Demo video: **add public YouTube or Vimeo URL after recording**
+- Demo video: **WIP**
 
 ## Open Source description
 
@@ -164,51 +160,6 @@ can be adapted to their own product identity.
   call, source, and evidence panel explicit.
 - **Suggestion:** Publish a small reference simulation and submission rubric.
 
-## Demo script — target 160 seconds
-
-### 0:00–0:15 — Problem and promise
-
-“Household plans rarely fail because people do not care. They fail because
-everyone has different constraints. Home Huddle turns those competing needs
-into one plan everyone can follow.” Show the hero and three scenario cards.
-
-### 0:15–0:30 — Explain the experience
-
-Briefly point out that this is a simulated Alexa+ experience with a public React
-page and a real Amazon Bedrock runtime call. Mention that no physical
-device is required for the selected path.
-
-### 0:30–1:05 — Create the plan
-
-Select **Dinner + homework**. Let the genuine Bedrock request complete. Walk
-through the participant chips, ownership, times, durations, and planning note.
-Keep the user request visible beside the structured plan.
-
-### 1:05–1:35 — Revise conversationally
-
-Select **Add a 10-minute transition buffer**, then send the editable text.
-Highlight the new version, the 10-minute gap after dinner, and Jordan’s call
-remaining at 6:30 PM. Optional microphone input can be shown separately if
-browser permission is already available.
-
-### 1:35–1:55 — Prove the AWS integration
-
-Open **AWS integration evidence**. Show Amazon Bedrock, the Nova 2 Lite model
-ID, planning-tool invocation, and latency. Explain that no prompt or household
-content is logged.
-
-### 1:55–2:20 — Open-source contribution
-
-Show the public Conversation Display Kit repository, its MIT license, tests,
-public API, and `v0.1.1` release. Point out that Home Huddle installs that exact
-tag.
-
-### 2:20–2:40 — Close
-
-“Home Huddle makes a plan clear, fair, and easy to change. It is a focused
-Alexa+ simulation, powered by Bedrock and built on a reusable open-source
-conversation layer.” End on the populated plan view.
-
 ## Final verification
 
 - [x] Verify Nova 2 Lite access with a direct, low-token Bedrock Converse call.
@@ -222,7 +173,7 @@ conversation layer.” End on the populated plan view.
       public Lambda URL. Both returned validated plans with tool use.
 - [x] Confirm the AWS evidence panel shows tool use and latency.
 - [x] Re-run lint, typecheck, tests, build, and production audit.
-- [ ] Record a public English video under three minutes with no copyrighted
+- [ ] Record a public video under three minutes with no copyrighted
       footage, music, or unlicensed logos.
 - [ ] Add the video URL above.
 - [x] Update Nova feedback with the observed live behavior.
