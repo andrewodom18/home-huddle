@@ -84,7 +84,10 @@ describe("createBedrockGateway", () => {
     const sdkSend = vi.fn(async (command) => {
       expect(command.input.modelId).toBe("us.amazon.nova-2-lite-v1:0");
       expect(command.input.toolConfig?.tools?.[0]).toMatchObject({
-        toolSpec: { name: "publish_household_plan" },
+        toolSpec: {
+          name: "publish_household_plan",
+          inputSchema: { json: { required: expect.arrayContaining(["requirements", "items"]) } },
+        },
       });
       expect(command.input.messages?.[2]?.content?.[0]).toEqual({
         toolResult: {
