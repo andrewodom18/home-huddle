@@ -5,3 +5,7 @@ output "chat_url" {
 output "quota_table_name" {
   value = aws_dynamodb_table.quota.name
 }
+
+output "share_table_name" {
+  value = aws_dynamodb_table.shares.name
+}

@@ -1,8 +1,10 @@
-import { chatRequestSchema, type ChatErrorResponse } from "../shared/contracts";
+import { chatRequestSchema } from "../shared/contracts";
 import { createChatService, type ChatService } from "./chatService";
 import { createBedrockGateway } from "./bedrock";
 import { AppError } from "./errors";
 import { createQuotaReserver } from "./quota";
+import { shareCreateRequestSchema, shareResolveRequestSchema } from "../shared/shareContracts";
+import { createShareService, ShareError, type ShareService } from "./share";
 
 type FunctionUrlEvent = {
   requestContext?: { http?: { method?: string } };
@@ -13,6 +15,7 @@ type FunctionUrlEvent = {
 
 type LambdaOptions = {
   chatService?: ChatService;
+  shareService?: ShareService;
   reserve?: () => Promise<void>;
   publicOrigin?: string;
 };
@@ -33,6 +36,7 @@ export function createLambdaHandler(options: LambdaOptions = {}) {
   const chatService = options.chatService ?? createChatService({
     gateway: createBedrockGateway({ beforeConverse: reserve }),
   });
+  const shareService = options.shareService ?? createShareService({ requireTable: true });
   const publicOrigin = options.publicOrigin ?? process.env.PUBLIC_ORIGIN;
 
   return async (event: FunctionUrlEvent) => {
@@ -61,10 +65,27 @@ export function createLambdaHandler(options: LambdaOptions = {}) {
       const rawBody = event.isBase64Encoded
         ? Buffer.from(event.body ?? "", "base64").toString("utf8")
         : event.body ?? "";
+      if (Buffer.byteLength(rawBody) > 24_000) {
+        throw new AppError("VALIDATION", "The request is too large.", { status: 413 });
+      }
+      const body: unknown = JSON.parse(rawBody);
+      if (typeof body === "object" && body !== null && "action" in body) {
+        if (body.action === "share-create") {
+          const parsed = shareCreateRequestSchema.safeParse(body);
+          if (!parsed.success) throw new ShareError("VALIDATION", "Choose a valid plan, date, and time zone.", 400);
+          return response(200, await shareService.create(parsed.data));
+        }
+        if (body.action === "share-resolve") {
+          const parsed = shareResolveRequestSchema.safeParse(body);
+          if (!parsed.success) throw new ShareError("VALIDATION", "Use a valid share token.", 400);
+          return response(200, await shareService.resolve(parsed.data));
+        }
+        throw new ShareError("VALIDATION", "Unknown request action.", 400);
+      }
       if (Buffer.byteLength(rawBody) > 16_000) {
         throw new AppError("VALIDATION", "The request is too large.", { status: 413 });
       }
-      const parsed = chatRequestSchema.safeParse(JSON.parse(rawBody));
+      const parsed = chatRequestSchema.safeParse(body);
       if (!parsed.success) {
         throw new AppError("VALIDATION", "Use a short message and at most 12 history items.", {
           status: 400,
@@ -72,7 +93,7 @@ export function createLambdaHandler(options: LambdaOptions = {}) {
       }
       return response(200, await chatService(parsed.data));
     } catch (error) {
-      const appError = error instanceof AppError
+      const appError = error instanceof AppError || error instanceof ShareError
         ? error
         : error instanceof SyntaxError
           ? new AppError("VALIDATION", "Send valid JSON.", { status: 400 })
@@ -80,7 +101,7 @@ export function createLambdaHandler(options: LambdaOptions = {}) {
               retryable: true,
               status: 503,
             });
-      const body: ChatErrorResponse = {
+      const body = {
         error: {
           code: appError.code,
           message: appError.message,

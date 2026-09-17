@@ -37,6 +37,24 @@ resource "aws_dynamodb_table" "quota" {
   tags = local.tags
 }
 
+resource "aws_dynamodb_table" "shares" {
+  name         = "home-huddle-share-snapshots"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "id"
+
+  attribute {
+    name = "id"
+    type = "S"
+  }
+
+  ttl {
+    attribute_name = "expiresAt"
+    enabled        = true
+  }
+
+  tags = local.tags
+}
+
 resource "aws_iam_role" "lambda" {
   name = "home-huddle-lambda-bedrock"
   assume_role_policy = jsonencode({
@@ -75,6 +93,21 @@ resource "aws_iam_role_policy" "runtime" {
             "dynamodb:EnclosingOperation" = ["TransactWriteItems"]
           }
         }
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["dynamodb:PutItem", "dynamodb:UpdateItem"]
+        Resource = aws_dynamodb_table.shares.arn
+        Condition = {
+          "ForAnyValue:StringEquals" = {
+            "dynamodb:EnclosingOperation" = ["TransactWriteItems"]
+          }
+        }
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["dynamodb:GetItem"]
+        Resource = aws_dynamodb_table.shares.arn
       }
     ]
   })
@@ -104,6 +137,7 @@ resource "aws_lambda_function" "chat" {
       BEDROCK_MODEL_ID           = var.model_id
       PUBLIC_ORIGIN              = var.public_origin
       QUOTA_TABLE_NAME           = aws_dynamodb_table.quota.name
+      SHARE_TABLE_NAME           = aws_dynamodb_table.shares.name
       DAILY_BEDROCK_CALL_LIMIT   = tostring(var.daily_bedrock_call_limit)
       MONTHLY_BEDROCK_CALL_LIMIT = tostring(var.monthly_bedrock_call_limit)
     }

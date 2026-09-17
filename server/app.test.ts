@@ -8,6 +8,35 @@ import { createApp } from "./app";
 import { AppError } from "./errors";
 
 describe("Home Huddle API", () => {
+  it("accepts share actions on the chat URL and local aliases", async () => {
+    const plan = { title: "Evening", objective: "Prepare", participants: ["Maya"], items: [{ id: "1", task: "Prepare", assignee: "Maya", startTime: "6:00 PM", durationMinutes: 30 }], notes: [], version: 1, updatedAt: "2026-09-16T12:00:00.000Z" };
+    const shareService = {
+      create: vi.fn(async () => ({ token: "a".repeat(32), expiresAt: "2026-09-23T12:00:00.000Z" })),
+      resolve: vi.fn(async () => ({ plan, date: "2026-09-18", timeZone: "America/Chicago", expiresAt: "2026-09-23T12:00:00.000Z" })),
+    };
+    const chatService = vi.fn();
+    const app = createApp({ chatService, shareService });
+    const created = await request(app).post("/api/chat").send({ action: "share-create", plan, date: "2026-09-18", timeZone: "America/Chicago" });
+    const resolved = await request(app).post("/api/share/resolve").send({ token: "a".repeat(32) });
+    expect(created.status).toBe(200);
+    expect(resolved.status).toBe(200);
+    expect(created.headers["cache-control"]).toBe("no-store");
+    expect(resolved.headers["cache-control"]).toBe("no-store");
+    expect(shareService.create).toHaveBeenCalledOnce();
+    expect(shareService.resolve).toHaveBeenCalledOnce();
+    expect(chatService).not.toHaveBeenCalled();
+  });
+
+  it("rejects an oversized share body without invoking storage", async () => {
+    const shareService = { create: vi.fn(), resolve: vi.fn() };
+    const response = await request(createApp({ chatService: vi.fn(), shareService }))
+      .post("/api/chat")
+      .send({ action: "share-create", plan: {}, date: "2026-09-18", timeZone: "America/Chicago", padding: "x".repeat(25_000) });
+    expect(response.status).toBe(413);
+    expect(response.body.error.code).toBe("VALIDATION");
+    expect(shareService.create).not.toHaveBeenCalled();
+  });
+
   it("reports readiness without exposing credentials", async () => {
     const response = await request(
       createApp({ chatService: vi.fn(), bedrockConfigured: true }),
