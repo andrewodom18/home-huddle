@@ -22,7 +22,7 @@ before deployment.
 ## Prerequisites
 
 - Public Home Huddle and Conversation Display Kit repositories, with the
-  `v0.1.1` kit asset anonymously installable.
+  `v0.2.0` kit asset anonymously installable.
 - An approved AWS SSO/profile session with Lambda, DynamoDB, IAM, CloudWatch
   Logs, Bedrock, and Budgets permissions. Never place AWS credentials in Git,
   GitHub Actions, or the browser.
@@ -56,6 +56,11 @@ Review the plan before applying. Terraform creates a public URL with
 `authorization_type=NONE` and a CORS allowlist for the page origin. Browser
 CORS and the app's Origin check reduce cross-site use; they are not
 authentication. DynamoDB's conditional transaction is the Bedrock cost cap.
+The separate share table stores immutable seven-day plan snapshots under a
+SHA-256 hash of an unguessable URL-fragment token. Share creates and resolves
+have their own global day/month quotas. Lambda checks expiry on every resolve,
+because DynamoDB TTL deletion may lag. Share links are only for fictional
+demo plans; anyone with the link can view its snapshot until expiry.
 Terraform state contains account metadata and should be protected and backed
 up outside Git. The provider lockfile is committed.
 

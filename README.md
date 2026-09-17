@@ -15,6 +15,10 @@ GitHub Pages with a small AWS Lambda backend.
 - A conversational planning flow with three fictional, demo-ready scenarios.
 - Real Amazon Nova 2 Lite tool use through the Bedrock Converse API.
 - A structured, validated schedule that can be revised conversationally.
+- Server-owned checklists for examples and displayed interpreted checklists for
+  free text, with stable task IDs and validation before publication.
+- Apply/Keep current review for revisions, one-level undo, a dated day view,
+  `.ics` download, and opt-in seven-day read-only snapshot links.
 - Optional browser speech recognition with a complete text fallback.
 - An expandable, non-sensitive AWS trace showing model, tool use, and latency.
 - A separately released open-source UI dependency:
@@ -36,9 +40,10 @@ Zod validation → normalized HouseholdPlan → browser
 ```
 
 The server permits at most three Bedrock calls per user request. A valid tool
-payload is normalized with stable item IDs, a version number, and a timestamp.
-Invalid tool output is returned to the model once for repair and never rendered
-as a plan.
+payload is normalized with stable task IDs, a version number, and a timestamp.
+Invalid tool output is returned to the model for bounded repair and never
+rendered as a plan. For free text, only displayed interpreted constraints are
+verified; an uncaptured constraint is not claimed as checked.
 
 ## Run locally
 
@@ -57,7 +62,7 @@ npm ci
 cp .env.example .env.local
 ```
 
-`npm ci` installs the pinned public Conversation Display Kit `v0.1.1` release
+`npm ci` installs the pinned public Conversation Display Kit `v0.2.0` release
 asset. It has been verified with an empty npm cache and no GitHub credentials.
 
 Add the Bedrock key to `.env.local`:
@@ -80,9 +85,15 @@ Open [http://127.0.0.1:5173](http://127.0.0.1:5173). The API listens only on
 ## API
 
 `POST /api/chat` accepts a message, up to 12 previous text messages, and an
-optional current plan. It returns an assistant reply, an optional replacement
+optional current plan and scenario ID. It returns an assistant reply, an optional replacement
 plan, and safe integration metadata. See `shared/contracts.ts` for the complete
 Zod schemas and TypeScript types.
+
+The same hosted POST URL also accepts `share-create` and `share-resolve`
+actions. The browser keeps the unguessable token in the URL fragment and
+sends it in a POST body. Snapshots contain the accepted plan, date, and time
+zone—not chat history—and expire after seven days. Sharing is for fictional
+demo data only; anyone with the link can read the snapshot until expiry.
 
 `GET /api/health` reports whether local Bedrock authentication is configured
 but never exposes credentials. The hosted Lambda URL accepts the configured
@@ -123,6 +134,8 @@ resources.
 - Use fictional data for the hackathon demonstration.
 - Conversation and plan state are stored only in browser `localStorage`, but
   each request and recent history are sent to Bedrock for planning.
+- Sharing is opt-in and stores only an immutable plan snapshot in a separate
+  DynamoDB table. Expired links are rejected on read even if TTL cleanup lags.
 - Audio is handled by the browser speech-recognition implementation; Home
   Huddle never receives or stores audio.
 - Server logs contain request ID, model ID, latency, stop reason, tool name, and

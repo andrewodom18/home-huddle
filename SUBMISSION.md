@@ -14,8 +14,9 @@ tool. Home Huddle validates the tool output, displays clear ownership and
 timing, and lets the user revise the complete plan conversationally.
 
 The interface provides three fictional scenarios, optional speech-to-text, a
-reliable typed interaction, local-only persistence, and a visible AWS evidence
-panel. No physical Amazon device is required for this Alexa+ simulation path.
+reliable typed interaction, browser-local chat persistence, opt-in read-only
+snapshot sharing, and a visible AWS evidence panel. No physical Amazon device
+is required for this Alexa+ simulation path.
 
 ## How it works
 
@@ -25,13 +26,18 @@ panel. No physical Amazon device is required for this Alexa+ simulation path.
    US inference profile and the `publish_household_plan` tool definition.
 3. Nova either asks one concise clarification or returns a complete tool
    payload. Revisions must send a full replacement plan.
-4. Zod validates the tool payload. Schedule checks reject overlapping
-   assignments, a moved fixed call, or a claimed transition buffer without a
-   real gap. The API assigns IDs, increments the plan version, timestamps it,
-   and sends the tool result back to Nova for a concise confirmation.
-5. The browser renders and saves the plan locally. The Lambda uses IAM to call
+4. Zod and schedule checks verify the displayed checklist, task coverage,
+   assignments, fixed times, ordering, gaps, and workload. On invalid output,
+   the API sends an error tool result to Nova for a bounded repair attempt.
+   On valid output, it publishes the plan directly; it does not send a
+   successful tool result back to Nova.
+5. The browser renders and saves the first plan locally. Later plans are
+   proposals with changed times and owners for Apply or Keep current, plus undo.
+   The Lambda uses IAM to call
    Bedrock and a DynamoDB transaction to reserve quota before each model call.
    Logs do not include prompts or household details.
+6. The user can export a dated `.ics` file or opt in to an expiring read-only
+   share link. A separate DynamoDB table holds only the plan snapshot, not chat.
 
 ## Track and mini challenges
 
@@ -41,7 +47,7 @@ panel. No physical Amazon device is required for this Alexa+ simulation path.
   `server/chatService.ts`.
 - **Open Source:** Conversation Display Kit is a new, additional public,
   MIT-licensed React project released during the hackathon. Home Huddle pins
-  its `v0.1.1` release asset.
+  its `v0.2.0` release asset, including the accessible ChangeReviewCard.
 
 The project enters both mini challenges while acknowledging that one project
 can win at most one mini-challenge prize.
@@ -53,7 +59,7 @@ can win at most one mini-challenge prize.
 - Additional open-source repository:
   https://github.com/andrewodom18/conversation-display-kit
 - Open-source contribution/release URL:
-  https://github.com/andrewodom18/conversation-display-kit/releases/tag/v0.1.1
+  https://github.com/andrewodom18/conversation-display-kit/releases/tag/v0.2.0
 - Live demo: https://andrewodom18.github.io/home-huddle/
 - Demo video: **add public YouTube or Vimeo URL after recording**
 
@@ -63,7 +69,8 @@ Conversation Display Kit provides accessible, provider-neutral React
 components for conversational prototypes. It exports a message display and
 composer with keyboard submission, suggested-prompt chips, a live-region status
 indicator, TypeScript types, responsive CSS, theme variables, tests, examples,
-and an MIT license. Home Huddle consumes the public `v0.1.1` release directly,
+and an MIT license. Version `v0.2.0` adds the typed, keyboard-accessible
+ChangeReviewCard with tests and an example. Home Huddle consumes this release directly,
 demonstrating that the package works outside its own repository.
 
 This matters because conversational demos often duplicate fragile chat UI and
