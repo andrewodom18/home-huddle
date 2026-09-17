@@ -111,7 +111,12 @@ const PLAN_TOOL: Tool = {
                   maximum: 480,
                 },
                 task: { type: "string", minLength: 1, maxLength: 160 },
-                assignee: { type: "string", minLength: 1, maxLength: 80 },
+                assignee: {
+                  type: "string",
+                  minLength: 1,
+                  maxLength: 80,
+                  description: "Exact participant names separated by commas. Include every required participant and at least one person from each atLeastOneOf list; never use roles or placeholders.",
+                },
               },
             },
           },
@@ -165,6 +170,7 @@ Your job is to turn competing household constraints into a fair, realistic sched
 - Once those details are sufficient, call publish_household_plan. Do not present a final schedule without calling the tool.
 - In every first plan, include requirements: source "interpreted" for free text, the stated time window, and one task record for every requested activity or break. Copy each task ID into exactly one schedule item. These are your interpretation of the request, not proof that every free-text constraint was understood.
 - For built-in examples, use the supplied canonical requirements exactly. Do not change their IDs, durations, people, restrictions, fixed times, order, or window.
+- Each item's assignee is a machine-checked list of exact names from participants, separated by commas. Include every requiredParticipants name and choose a named person from atLeastOneOf. For Maya's math help with Casey, write "Maya, Casey", not just "Casey" or "Maya with an adult". Use all listed names for shared activities rather than a role or placeholder.
 - For revisions, preserve unaffected details and call the tool with a complete replacement plan.
 - If the user message starts "Correct requirement task-id:", update only that interpreted task requirement to match the correction and preserve all other established requirements. If it starts "Correct time window:", update only the interpreted time window. Keep stable task IDs and expose the changes in the complete checklist.
 - Treat explicitly fixed times as immovable commitments in the initial plan and every revision. Schedule flexible work around them.

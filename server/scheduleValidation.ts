@@ -33,7 +33,7 @@ export function scheduleIssues(
   }
   for (const slot of slots) {
     if (slot.start === undefined) issues.push(`${slot.item.task}: use a valid start time such as 6:30 PM`);
-    if (slot.people.length === 0) issues.push(`${slot.item.task}: assign at least one listed participant`);
+    if (slot.people.length === 0) issues.push(`${slot.item.task}: assign at least one listed participant using exact names separated by commas (${draft.participants.join(", ")})`);
   }
 
   for (let left = 0; left < slots.length; left += 1) {
@@ -69,10 +69,10 @@ export function scheduleIssues(
         issues.push(`${requirement.label}: keep the required ${requirement.durationMinutes}-minute duration`);
       }
       for (const person of requirement.requiredParticipants ?? []) {
-        if (!slot.people.some((assigned) => assigned.toLowerCase() === person.toLowerCase())) issues.push(`${requirement.label}: include ${person}`);
+        if (!slot.people.some((assigned) => assigned.toLowerCase() === person.toLowerCase())) issues.push(`${requirement.label}: include ${person} in assignee`);
       }
       if (requirement.atLeastOneOf?.length && !requirement.atLeastOneOf.some((person) => slot.people.some((assigned) => assigned.toLowerCase() === person.toLowerCase()))) {
-        issues.push(`${requirement.label}: include one of ${requirement.atLeastOneOf.join(", ")}`);
+        issues.push(`${requirement.label}: include one of ${requirement.atLeastOneOf.join(", ")} in assignee`);
       }
       for (const person of slot.people) {
         if (requirement.allowedParticipants && !requirement.allowedParticipants.some((allowed) => allowed.toLowerCase() === person.toLowerCase())) issues.push(`${requirement.label}: ${person} is not an allowed assignee`);

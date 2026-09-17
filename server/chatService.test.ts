@@ -160,6 +160,40 @@ describe("createChatService", () => {
     expect(JSON.stringify(repairRequest)).toContain("overlap for Jordan");
   });
 
+  it("repairs a preset when a helper is named but the required child is omitted", async () => {
+    const valid: PlanDraft = {
+      title: "Weekday evening",
+      objective: "Finish dinner and homework before 8:00 PM.",
+      participants: ["Maya", "Leo", "Jordan", "Casey"],
+      items: [
+        { taskId: "dinner", startTime: "5:30 PM", durationMinutes: 30, task: "Dinner", assignee: "Maya, Leo, Jordan, Casey" },
+        { taskId: "math-help", startTime: "6:00 PM", durationMinutes: 45, task: "Maya's math help", assignee: "Maya, Casey" },
+        { taskId: "reading", startTime: "6:00 PM", durationMinutes: 20, task: "Leo's reading", assignee: "Leo" },
+        { taskId: "jordan-call", startTime: "6:30 PM", durationMinutes: 20, task: "Jordan's fixed call", assignee: "Jordan" },
+      ],
+      notes: [],
+      requirements: SCENARIO_REQUIREMENTS.weekday,
+    };
+    const invalid: PlanDraft = {
+      ...valid,
+      items: valid.items.map((item) => item.taskId === "math-help" ? { ...item, assignee: "Casey" } : item),
+    };
+    const gateway = mockGateway([
+      response([{ toolUse: { toolUseId: "missing-child", name: "publish_household_plan", input: invalid } }], "tool_use"),
+      response([{ toolUse: { toolUseId: "corrected", name: "publish_household_plan", input: valid } }], "tool_use"),
+    ]);
+
+    const result = await createChatService({ gateway, logger: vi.fn() })({
+      message: "Plan tonight",
+      history: [],
+      scenarioId: "weekday",
+    });
+
+    expect(gateway.converse).toHaveBeenCalledTimes(2);
+    expect(JSON.stringify(gateway.converse.mock.calls[1][0])).toContain("include Maya in assignee");
+    expect(result.plan?.items.find((item) => item.taskId === "math-help")?.assignee).toBe("Maya, Casey");
+  });
+
   it("increments the version when revising an existing plan", async () => {
     const currentPlan: HouseholdPlan = {
       ...draft,
