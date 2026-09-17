@@ -19,15 +19,17 @@ export function AboutPage() {
           <p>
             Choose an example or describe who is involved, what needs doing,
             and your time window. When a plan is ready, its calendar appears
-            below the chat. Ask for changes whenever plans shift.
+            below the chat. Later changes are proposals you can apply, keep,
+            or undo after applying.
           </p>
         </section>
         <section>
           <h2>What this demo is</h2>
           <p>
             Amazon Bedrock helps draft the schedule. This is a concept demo,
-            not an Amazon product, and it does not add events to a real calendar.
-            Review generated plans before relying on them; they may miss a constraint.
+            not an Amazon product. The displayed checklist shows what was
+            checked; for free text it reflects the model’s interpretation and
+            may omit something you said. Review it before relying on a plan.
           </p>
         </section>
         <section>
@@ -36,6 +38,9 @@ export function AboutPage() {
             Use fictional details. Messages and plans are saved in this
             browser, while planning requests are sent to Amazon Bedrock. The
             New plan button clears the saved conversation on this device.
+            Calendar files are downloads, not live sync. If you choose to create
+            a view link, only a read-only plan snapshot is stored for seven days.
+            Anyone with the link can view it until it expires.
           </p>
         </section>
       </div>

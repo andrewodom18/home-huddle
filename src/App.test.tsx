@@ -58,6 +58,22 @@ describe("Home Huddle", () => {
     expect(screen.getByRole("link", { name: "About this demo" })).toHaveAttribute("href", "?page=about");
   });
 
+  it("dismisses example scenarios and restores them with a new plan", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const dismiss = screen.getByRole("button", { name: "Dismiss example scenarios" });
+    expect(dismiss).toHaveAttribute("title", "Hide example scenarios");
+    await user.click(dismiss);
+
+    expect(screen.queryByRole("region", { name: "Example scenarios" })).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Message" })).toHaveFocus();
+
+    await user.click(screen.getByRole("button", { name: "New plan" }));
+    expect(screen.getByRole("region", { name: "Example scenarios" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /Dinner \+ homework|Share the chores|Accessible outing/ })).toHaveLength(3);
+  });
+
   it.each(PRESET_SCENARIOS)("shows and sends the complete $title scenario", async (scenario) => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       void input;
@@ -74,6 +90,7 @@ describe("Home Huddle", () => {
     await screen.findByText(success.reply);
     const request = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
     expect(request.message).toBe(scenario.prompt);
+    expect(request.scenarioId).toBe(scenario.id);
     expect(chatRequestSchema.safeParse(request).success).toBe(true);
   });
 
@@ -85,6 +102,27 @@ describe("Home Huddle", () => {
     render(<App />);
 
     expect(screen.getByLabelText("user message")).toHaveTextContent(PRESET_SCENARIOS[0].prompt);
+  });
+
+  it("offers a focused correction path for an interpreted checklist", async () => {
+    window.localStorage.setItem("home-huddle-state-v2", JSON.stringify({
+      messages: [{ id: "plan", role: "assistant", text: "Your plan is ready." }],
+      plan: {
+        ...plan,
+        requirements: {
+          source: "interpreted",
+          timeWindow: { startTime: "5:30 PM", endTime: "8:00 PM" },
+          tasks: [{ id: "dinner", label: "Prepare dinner", durationMinutes: 30 }],
+        },
+      },
+    }));
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByText("Interpreted checklist — review it"));
+    await user.click(screen.getByTitle("Correct the interpreted requirement for Prepare dinner"));
+    expect(screen.getByRole("textbox", { name: "Message" })).toHaveValue("Correct requirement dinner: ");
+    expect(screen.getByText(/What should I change about Prepare dinner/)).toBeInTheDocument();
   });
 
   it("opens a dedicated About view instead of an empty footer anchor", () => {
@@ -119,7 +157,7 @@ describe("Home Huddle", () => {
       await screen.findByText("I balanced dinner and homework before 8:00 PM."),
     ).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "A calmer evening" })).toBeInTheDocument();
-    expect(screen.getByText("Prepare dinner")).toBeInTheDocument();
+    expect(screen.getAllByText("Prepare dinner").length).toBeGreaterThan(0);
     expect(screen.getByText("Plan v1")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "View shared calendar" })).toHaveAttribute("href", "#calendar");
     expect(screen.getByRole("region", { name: "Household calendar" })).toBeInTheDocument();
@@ -164,7 +202,7 @@ describe("Home Huddle", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
-  it("replaces a saved plan with a conversational revision", async () => {
+  it("reviews, applies, and undoes a conversational revision", async () => {
     window.localStorage.setItem(
       "home-huddle-state-v1",
       JSON.stringify({
@@ -204,9 +242,17 @@ describe("Home Huddle", () => {
 
     await user.type(screen.getByLabelText("Message"), "Move dinner later{Enter}");
 
-    expect(await screen.findByText("Plan v2")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Review this revision" })).toBeInTheDocument();
+    expect(screen.getByText("Plan v1")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "A later evening" })).not.toBeInTheDocument();
+    screen.getByRole("button", { name: "Apply" }).focus();
+    await user.keyboard("{Enter}");
+    expect(screen.getByText("Plan v2")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "A later evening" })).toBeInTheDocument();
-    expect(screen.getByText("5:45 PM")).toBeInTheDocument();
+    expect(screen.getAllByText("5:45 PM").length).toBeGreaterThan(0);
+    await user.click(screen.getByRole("button", { name: "Undo accepted revision" }));
+    expect(screen.getByText("Plan v3")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "A calmer evening" })).toBeInTheDocument();
   });
 
   it("resets saved conversation and plan state", async () => {
