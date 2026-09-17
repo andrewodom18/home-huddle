@@ -534,5 +534,5 @@ function PlannerApp() {
 
 export default function App() {
   const token = shareTokenFromHash();
-  return token ? <SharedApp token={token} /> : <PlannerApp />;
+  return token !== null ? <SharedApp token={token} /> : <PlannerApp />;
 }

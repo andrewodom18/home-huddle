@@ -8,8 +8,10 @@ export function SharedApp({ token }: { token: string }) {
   const [snapshot, setSnapshot] = useState<SharedSnapshot | null>(null);
   const [error, setError] = useState("");
   const [downloadError, setDownloadError] = useState("");
+  const invalidToken = !/^[A-Za-z0-9_-]{32}$/.test(token);
 
   useEffect(() => {
+    if (invalidToken) return;
     let active = true;
     void resolveShare(token)
       .then((result) => { if (active) setSnapshot(result); })
@@ -17,7 +19,7 @@ export function SharedApp({ token }: { token: string }) {
         if (active) setError(failure instanceof Error ? failure.message : "This view link is unavailable.");
       });
     return () => { active = false; };
-  }, [token]);
+  }, [token, invalidToken]);
 
   return (
     <div className="app-shell app-shell--shared">
@@ -31,8 +33,8 @@ export function SharedApp({ token }: { token: string }) {
       <main className="shared-page" id="main-content">
         <span className="section-kicker">Shared snapshot</span>
         <h1>A plan to follow together.</h1>
-        {!snapshot && !error && <p role="status">Loading shared plan…</p>}
-        {error && <p className="shared-page__error" role="alert">{error}</p>}
+        {!snapshot && !error && !invalidToken && <p role="status">Loading shared plan…</p>}
+        {(error || invalidToken) && <p className="shared-page__error" role="alert">{invalidToken ? "This view link is invalid." : error}</p>}
         {snapshot && (
           <>
             <p className="shared-page__details">

@@ -58,7 +58,7 @@ export function SharePanel({
       setExpiresAt(result.expiresAt);
       try {
         await navigator.clipboard.writeText(url);
-        setMessage("Private view link copied.");
+        setMessage("View link copied. Anyone with it can read this snapshot until it expires.");
       } catch {
         setMessage("View link ready. Copy it from the field below.");
       }

@@ -38,6 +38,7 @@ export function shareUrl(token: string): string {
 }
 
 export function shareTokenFromHash(): string | null {
-  const match = /^#share=([A-Za-z0-9_-]{20,100})$/.exec(window.location.hash);
-  return match?.[1] ?? null;
+  return window.location.hash.startsWith("#share=")
+    ? window.location.hash.slice("#share=".length)
+    : null;
 }

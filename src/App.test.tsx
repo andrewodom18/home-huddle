@@ -137,6 +137,17 @@ describe("Home Huddle", () => {
     expect(screen.getByRole("link", { name: "About this demo" })).toHaveAttribute("aria-current", "page");
   });
 
+  it("shows a read-only error for a malformed share link", async () => {
+    window.history.replaceState(null, "", "/#share=invalid");
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    render(<App />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("This view link is invalid.");
+    expect(screen.queryByRole("textbox", { name: "Message" })).not.toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("runs a preset and renders the resulting Bedrock plan", async () => {
     const fetchMock = vi.fn(
       async (input: RequestInfo | URL, init?: RequestInit) => {
