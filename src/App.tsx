@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   ChangeReviewCard,
   ConversationDisplay,
@@ -146,7 +146,7 @@ function PlannerApp() {
     document.title = isAboutPage ? "About Home Huddle" : "Home Huddle — Make room for everyone";
   }, [isAboutPage]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     let active = true;
     try {
       window.localStorage.setItem(

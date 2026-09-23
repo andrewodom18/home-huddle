@@ -132,7 +132,10 @@ test("nonconsecutive dates, parallel work, notes, and .ics export", async ({ pag
   await page.getByRole("button", { name: "Save details" }).click();
   await expect(page.getByRole("button", { name: /Open details for Family picnic/ }).first()).toContainText("Has details");
   await page.getByText("Share or export this plan").click();
-  await page.getByRole("textbox", { name: "Time zone" }).fill("America/Chicago");
+  const zone = page.getByRole("textbox", { name: "Time zone" });
+  await zone.fill("America/Chicago");
+  await zone.press("Enter");
+  await expect(page.getByRole("checkbox", { name: /confirm these event dates/ })).toBeEnabled();
   await page.getByRole("checkbox", { name: /confirm these event dates/ }).check();
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download .ics" }).click();
