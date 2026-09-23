@@ -234,7 +234,7 @@ test("invalid time-zone drafts do not corrupt the accepted planning zone", async
   expect(await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).timeZone, storageKey)).toBe("America/Chicago");
   await noAccessibilityViolations(page);
   await zone.fill("America/New_York");
-  await zone.press("Tab");
+  await zone.press("Enter");
   await expect(page.getByRole("alert")).toHaveCount(0);
   await expect.poll(() => page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).timeZone, storageKey)).toBe("America/New_York");
   await page.reload();

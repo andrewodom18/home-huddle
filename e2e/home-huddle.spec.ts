@@ -121,10 +121,11 @@ test("nonconsecutive dates, parallel work, notes, and .ics export", async ({ pag
   await cleanOpen(page);
   await page.getByRole("button", { name: /Three family outings/ }).click();
   const days = page.getByRole("navigation", { name: "Schedule days" });
-  await expect(days.getByRole("button", { name: new RegExp(shortDate(gardenDate)) })).toHaveAttribute("aria-pressed", "true");
-  await days.getByRole("button", { name: new RegExp(shortDate(libraryDate)) }).click();
+  const dayButton = (day: string) => days.getByRole("button", { name: new RegExp(`${shortDate(day)}, \\d{4} `) });
+  await expect(dayButton(gardenDate)).toHaveAttribute("aria-pressed", "true");
+  await dayButton(libraryDate).click();
   await expect(page.getByRole("button", { name: /Open details for Accessible library visit/ }).first()).toBeVisible();
-  await days.getByRole("button", { name: new RegExp(shortDate(picnicDate)) }).click();
+  await dayButton(picnicDate).click();
   await expect(page.getByRole("button", { name: /Open details for Family picnic/ }).first()).toBeVisible();
   await page.getByRole("button", { name: /Open details for Family picnic/ }).first().click();
   await page.getByRole("textbox", { name: "Additional details" }).fill("Bring a fictional picnic blanket.");
@@ -210,6 +211,8 @@ test("end time, duration, and eligible people become a checked proposal and acce
   expect(requests.at(-1)?.edit).toEqual({ taskId: "kitchen", startTime: "9:00 AM", durationMinutes: 30 });
   await expect(page.getByRole("region", { name: "Proposed revision" })).toBeVisible();
   await page.getByRole("button", { name: "Apply" }).click();
+  await expect(page.getByRole("region", { name: "Proposed revision" })).toHaveCount(0);
+  await expect(page.getByText("Plan v2")).toBeVisible();
   await visibleEvent(page, "Clean the kitchen").click();
   await expect(page.getByRole("dialog").getByLabel("Activity duration in minutes")).toHaveValue("30");
   await page.getByRole("dialog").getByRole("checkbox", { name: "Alex" }).uncheck();
