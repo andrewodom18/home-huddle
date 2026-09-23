@@ -1,9 +1,10 @@
-import type { ChatErrorCode } from "../shared/contracts";
+import type { CallDiagnostics, ChatErrorCode } from "../shared/contracts";
 
 export class AppError extends Error {
   readonly code: ChatErrorCode;
   readonly retryable: boolean;
   readonly status: number;
+  diagnostics?: CallDiagnostics;
 
   constructor(
     code: ChatErrorCode,

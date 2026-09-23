@@ -13,9 +13,11 @@ import {
   type ShareResolveResponse,
   type ShareSnapshot,
 } from "../shared/shareContracts";
+import { isOutdatedExample } from "../src/planStatus";
+import { scheduleIssues } from "./scheduleValidation";
 
 const SHARE_LIFETIME_SECONDS = 7 * 86_400;
-const MAX_SNAPSHOT_BYTES = 20_000;
+const MAX_SNAPSHOT_BYTES = 64_000;
 const DAY_CREATE_LIMIT = 100;
 const MONTH_CREATE_LIMIT = 1_000;
 const DAY_RESOLVE_LIMIT = 500;
@@ -78,6 +80,24 @@ function snapshotJson(snapshot: ShareSnapshot) {
   return json;
 }
 
+function isCheckedSnapshot(snapshot: ShareSnapshot): boolean {
+  const { plan, date } = snapshot;
+  if (plan.requirements?.source === "scenario" && !plan.scenarioId) return false;
+  if (plan.scenarioId && isOutdatedExample(plan)) return false;
+  return scheduleIssues(plan, { message: "", history: [], planDate: date }, plan.requirements).length === 0;
+}
+
+function verifiedSnapshot(request: ShareCreateRequest): ShareSnapshot {
+  // Older browser-saved plans may still contain model-written, unchecked notes.
+  const parsed = shareSnapshotSchema.safeParse({
+    plan: { ...request.plan, notes: [] }, date: request.date, timeZone: request.timeZone,
+  });
+  if (!parsed.success || !isCheckedSnapshot(parsed.data)) {
+    throw new ShareError("VALIDATION", "This plan has not passed schedule checks. Review it before sharing.", 400);
+  }
+  return parsed.data;
+}
+
 function quotaPeriods(action: "create" | "resolve", now: Date) {
   const day = now.toISOString().slice(0, 10);
   const month = day.slice(0, 7);
@@ -129,7 +149,7 @@ function parseRecord(item: Record<string, AttributeValue> | undefined): ShareRec
   try {
     const parsed = shareSnapshotSchema.safeParse(JSON.parse(item.snapshot.S));
     const expiresAt = Number(item.expiresAt.N);
-    if (!parsed.success || !Number.isFinite(expiresAt)) return undefined;
+    if (!parsed.success || !Number.isFinite(expiresAt) || !isCheckedSnapshot(parsed.data)) return undefined;
     return { snapshot: parsed.data, expiresAt };
   } catch {
     return undefined;
@@ -158,9 +178,7 @@ export function createShareService(options: ShareOptions = {}): ShareService {
     };
     return {
       async create(request) {
-        const snapshot = shareSnapshotSchema.parse({
-          plan: request.plan, date: request.date, timeZone: request.timeZone,
-        });
+        const snapshot = verifiedSnapshot(request);
         snapshotJson(snapshot);
         const date = now();
         reserve("create", date);
@@ -178,7 +196,7 @@ export function createShareService(options: ShareOptions = {}): ShareService {
         reserve("resolve", date);
         const hash = sha256Token(request.token);
         const record = records.get(hash);
-        if (!record || record.expiresAt <= Math.floor(date.valueOf() / 1000)) {
+        if (!record || record.expiresAt <= Math.floor(date.valueOf() / 1000) || !isCheckedSnapshot(record.snapshot)) {
           records.delete(hash);
           throw notFoundError();
         }
@@ -203,9 +221,7 @@ export function createShareService(options: ShareOptions = {}): ShareService {
 
   return {
     async create(request) {
-      const snapshot = shareSnapshotSchema.parse({
-        plan: request.plan, date: request.date, timeZone: request.timeZone,
-      });
+      const snapshot = verifiedSnapshot(request);
       const json = snapshotJson(snapshot);
       const date = now();
       const token = randomBytes(24).toString("base64url");

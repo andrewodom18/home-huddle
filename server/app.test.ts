@@ -7,7 +7,26 @@ import { describe, expect, it, vi } from "vitest";
 import { createApp } from "./app";
 import { AppError } from "./errors";
 
+function richChatRequest() {
+  return {
+    message: "Revise this household plan", history: Array.from({ length: 12 }, (_, index) => ({ role: index % 2 ? "assistant" : "user", text: "x".repeat(1000) })),
+    currentPlan: {
+      title: "Large custom plan", objective: "Complete twenty tasks", participants: ["Alex"], notes: [], version: 1, updatedAt: "2026-09-18T12:00:00.000Z",
+      items: Array.from({ length: 20 }, (_, index) => ({ id: `task-${index}`, taskId: `task-${index}`, task: `Task ${index}`, date: "2026-09-19", assignee: "Alex", startTime: `${(9 + Math.floor(index / 4)) % 12 || 12}:${String(index % 4 * 15).padStart(2, "0")} ${index < 12 ? "AM" : "PM"}`, durationMinutes: 15, details: "d".repeat(500) })),
+    },
+  };
+}
+
 describe("Home Huddle API", () => {
+  it("accepts a valid large current plan and full history above the former16KB limit", async () => {
+    const body = richChatRequest();
+    expect(Buffer.byteLength(JSON.stringify(body))).toBeGreaterThan(16_000);
+    const chatService = vi.fn(async () => ({ reply: "Ready", meta: { provider: "Home Huddle" as const, modelId: "test", toolUsed: false, latencyMs: 0 } }));
+    const response = await request(createApp({ chatService })).post("/api/chat").send(body);
+    expect(response.status).toBe(200);
+    expect(chatService).toHaveBeenCalledOnce();
+  });
+
   it("accepts share actions on the chat URL and local aliases", async () => {
     const plan = { title: "Evening", objective: "Prepare", participants: ["Maya"], items: [{ id: "1", task: "Prepare", assignee: "Maya", startTime: "6:00 PM", durationMinutes: 30 }], notes: [], version: 1, updatedAt: "2026-09-16T12:00:00.000Z" };
     const shareService = {
@@ -31,7 +50,7 @@ describe("Home Huddle API", () => {
     const shareService = { create: vi.fn(), resolve: vi.fn() };
     const response = await request(createApp({ chatService: vi.fn(), shareService }))
       .post("/api/chat")
-      .send({ action: "share-create", plan: {}, date: "2026-09-18", timeZone: "America/Chicago", padding: "x".repeat(25_000) });
+      .send({ action: "share-create", plan: {}, date: "2026-09-18", timeZone: "America/Chicago", padding: "x".repeat(65_000) });
     expect(response.status).toBe(413);
     expect(response.body.error.code).toBe("VALIDATION");
     expect(shareService.create).not.toHaveBeenCalled();
@@ -43,7 +62,15 @@ describe("Home Huddle API", () => {
     ).get("/api/health");
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({ status: "ok", bedrockConfigured: true });
+    expect(response.body).toEqual({ status: "ok", bedrockConfigured: true, plannerVersion: 2, capabilities: ["interpreted-requirements", "typed-revisions", "availability", "resource-capacity"] });
+  });
+
+  it("returns only safe call diagnostics for a failed planning attempt", async () => {
+    const error = new AppError("INVALID_TOOL_OUTPUT", "Plan failed validation.", { status: 502, cause: { privatePrompt: "never expose" } });
+    error.diagnostics = { callCount: 3, stage: "schedule", stopReason: "max_tokens" };
+    const response = await request(createApp({ chatService: vi.fn(async () => { throw error; }) })).post("/api/chat").send({ message: "Plan tonight", history: [] });
+    expect(response.body.error.diagnostics).toEqual({ callCount: 3, stage: "schedule", stopReason: "max_tokens" });
+    expect(response.text).not.toContain("never expose");
   });
 
   it("rejects invalid chat input", async () => {

@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from "vitest";
+import { AppError } from "./errors";
 import { createLambdaHandler } from "./lambda";
 
 const validEvent = {
@@ -8,7 +9,34 @@ const validEvent = {
   body: JSON.stringify({ message: "Plan tonight", history: [] }),
 };
 
+function richChatRequest() {
+  return {
+    message: "Revise this household plan", history: Array.from({ length: 12 }, (_, index) => ({ role: index % 2 ? "assistant" : "user", text: "x".repeat(1000) })),
+    currentPlan: {
+      title: "Large custom plan", objective: "Complete twenty tasks", participants: ["Alex"], notes: [], version: 1, updatedAt: "2026-09-18T12:00:00.000Z",
+      items: Array.from({ length: 20 }, (_, index) => ({ id: `task-${index}`, taskId: `task-${index}`, task: `Task ${index}`, date: "2026-09-19", assignee: "Alex", startTime: `${(9 + Math.floor(index / 4)) % 12 || 12}:${String(index % 4 * 15).padStart(2, "0")} ${index < 12 ? "AM" : "PM"}`, durationMinutes: 15, details: "d".repeat(500) })),
+    },
+  };
+}
+
 describe("public Lambda handler", () => {
+  it("accepts a valid large current plan and full history above the former16KB limit", async () => {
+    const body = richChatRequest();
+    expect(Buffer.byteLength(JSON.stringify(body))).toBeGreaterThan(16_000);
+    const chatService = vi.fn(async () => ({ reply: "Ready", meta: { provider: "Home Huddle" as const, modelId: "test", toolUsed: false, latencyMs: 0 } }));
+    const result = await createLambdaHandler({ chatService, publicOrigin: "https://andrewodom18.github.io" })({ ...validEvent, body: JSON.stringify(body) });
+    expect(result.statusCode).toBe(200);
+    expect(chatService).toHaveBeenCalledOnce();
+  });
+
+  it("preserves safe failure diagnostics without exposing the error cause", async () => {
+    const error = new AppError("INVALID_TOOL_OUTPUT", "Plan failed validation.", { status: 502, cause: "private prompt" });
+    error.diagnostics = { callCount: 2, stage: "schedule", stopReason: "max_tokens" };
+    const result = await createLambdaHandler({ chatService: vi.fn(async () => { throw error; }), publicOrigin: "https://andrewodom18.github.io" })(validEvent);
+    expect(JSON.parse(result.body).error.diagnostics).toEqual(error.diagnostics);
+    expect(result.body).not.toContain("private prompt");
+  });
+
   it("routes share actions without invoking Bedrock and never places tokens in headers", async () => {
     const chatService = vi.fn();
     const plan = { title: "Evening", objective: "Prepare", participants: ["Maya"], items: [{ id: "1", task: "Prepare", assignee: "Maya", startTime: "6:00 PM", durationMinutes: 30 }], notes: [], version: 1, updatedAt: "2026-09-16T12:00:00.000Z" };

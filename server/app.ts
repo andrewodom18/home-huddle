@@ -40,7 +40,7 @@ export function createApp(options: AppOptions = {}) {
   let activeChats = 0;
 
   app.disable("x-powered-by");
-  app.use(express.json({ limit: "24kb" }));
+  app.use(express.json({ limit: "64kb" }));
 
   function verifyOrigin(request: Request) {
     if (
@@ -56,7 +56,7 @@ export function createApp(options: AppOptions = {}) {
   async function handleShare(request: Request, action: "share-create" | "share-resolve") {
     verifyOrigin(request);
     const body = { ...request.body, action };
-    if (Buffer.byteLength(JSON.stringify(body)) > 24_000) {
+    if (Buffer.byteLength(JSON.stringify(body)) > 64_000) {
       throw new ShareError("VALIDATION", "The request is too large.", 413);
     }
     if (action === "share-create") {
@@ -72,6 +72,8 @@ export function createApp(options: AppOptions = {}) {
   app.get("/api/health", (_request, response) => {
     response.json({
       status: "ok",
+      plannerVersion: 2,
+      capabilities: ["interpreted-requirements", "typed-revisions", "availability", "resource-capacity"],
       bedrockConfigured:
         options.bedrockConfigured ??
         Boolean(
@@ -90,7 +92,7 @@ export function createApp(options: AppOptions = {}) {
         return;
       }
       verifyOrigin(request);
-      if (Buffer.byteLength(JSON.stringify(request.body) ?? "") > 16_000) {
+      if (Buffer.byteLength(JSON.stringify(request.body) ?? "") > 64_000) {
         throw new AppError("VALIDATION", "The request is too large.", { status: 413 });
       }
       if (now() - windowStartedAt >= 3_600_000) {
@@ -109,7 +111,7 @@ export function createApp(options: AppOptions = {}) {
       if (!parsed.success) {
         throw new AppError(
           "VALIDATION",
-          "Use a message under 500 characters and no more than 12 history items.",
+          "Use a message under 1,000 characters and no more than 12 history items.",
           { status: 400 },
         );
       }
@@ -188,6 +190,7 @@ export function createApp(options: AppOptions = {}) {
           code: appError.code,
           message: appError.message,
           retryable: appError.retryable,
+          ...(appError instanceof AppError && appError.diagnostics ? { diagnostics: appError.diagnostics } : {}),
         },
       });
     },
