@@ -1,16 +1,29 @@
 # Home Huddle — Submission Draft
 
-This file collects the evidence, feedback, and demo sequence completed for
-the Amazon Developer Hackathon submission.
+This file collects the candidate narrative, evidence, and remaining submission
+work. The September 23 candidate improvements have not been deployed. Historical
+deployment checks below apply
+only to the older public version; current quality evidence belongs in
+`docs/implementation-validation.md` and `output/live-corpus-v2/report.md`.
+
+**September 23 status:** the three previously failing live cases now pass on the
+fixed source: a 20-task plan, an add-activity revision, and conflicting fixed
+appointments. They used seven calls and published no hard-constraint violation.
+Every corpus case has a latest passing observation, but those observations span
+source versions. The original same-source thirty-case and critical-repeat gate
+remains **not met** because the user requested only failed-case rechecks. The
+preserved ledger's conservative usage is 155 of the targeted 159-call ceiling.
 
 ## Project description
 
 Home Huddle is a simulated Alexa+ experience that turns competing household
 needs into one workable plan. A family or shared household describes who is
 involved, what needs to happen, and the available time. Amazon Nova 2 Lite
-decides whether one clarification is needed or invokes a structured planning
-tool. Home Huddle validates the tool output, displays clear ownership and
-timing, and lets the user revise the complete plan conversationally.
+captures requirements separately from scheduling, asks about blocking uncertainty,
+and makes estimates visible. Home Huddle checks availability, shared resources,
+dependencies, fixed commitments, and task coverage before displaying a schedule.
+Users can revise future work while preserving already-started activities, then
+review, accept, reject, or undo the proposed changes.
 
 The interface provides three fictional scenarios, optional speech-to-text, a
 reliable typed interaction, browser-local chat persistence, opt-in read-only
@@ -22,14 +35,17 @@ is required for this Alexa+ simulation path.
 1. The React client sends a message, the last 12 text messages, and any current
    plan to the public AWS Lambda API. Local development uses an Express API.
 2. The API calls Amazon Bedrock Converse in `us-east-1` using the Nova 2 Lite
-   US inference profile and the `publish_household_plan` tool definition.
-3. Nova either asks one concise clarification or returns a complete tool
-   payload. Revisions must send a full replacement plan.
+   US inference profile. Custom requests first capture structured requirements;
+   conversational revisions capture typed operations scoped to the request.
+3. Validated requirements become server-owned before the scheduling call.
+   Nova can ask a focused clarification, explain a conflict, or submit a complete
+   replacement schedule through `publish_household_plan`.
 4. Zod and schedule checks verify the displayed checklist, task coverage,
    assignments, fixed times, ordering, gaps, and workload. On invalid output,
    the API sends an error tool result to Nova for a bounded repair attempt.
-   On valid output, it publishes the plan directly; it does not send a
-   successful tool result back to Nova.
+   After a valid `publish_household_plan` result, it publishes the plan directly
+   without another Nova call. Successful requirement capture sends a tool result
+   back to Nova so scheduling can use the accepted checklist.
 5. The browser renders and saves the first plan locally. Later plans are
    proposals with changed times and owners for Apply or Keep current, plus undo.
    The Lambda uses IAM to call
@@ -42,11 +58,14 @@ is required for this Alexa+ simulation path.
 
 - **Primary track:** Alexa+ — simulated Alexa+ experience in a web application.
 - **AWS Builder:** Amazon Bedrock Converse API and Amazon Nova 2 Lite power the
-  live planning and tool-use loop in `server/bedrock.ts` and
-  `server/chatService.ts`.
+  live planning and tool-use loop. Lambda runs orchestration; DynamoDB transactions
+  reserve each model call; a separate table holds opt-in expiring snapshots; IAM
+  supplies runtime permissions; safe operational logs provide failure evidence.
 - **Open Source:** Conversation Display Kit is a new, additional public,
-  MIT-licensed React project released during the hackathon. Home Huddle pins
-  its `v0.2.0` release asset, including the accessible ChangeReviewCard.
+  MIT-licensed React project released during the hackathon. The local `0.3.0`
+  candidate improves reusable approval flows, accessibility, and independent
+  package consumption. Home Huddle tests its vendored build; `v0.2.0` remains the
+  published baseline until a separately requested release.
 
 ## Required links
 
@@ -65,13 +84,37 @@ Conversation Display Kit provides accessible, provider-neutral React
 components for conversational prototypes. It exports a message display and
 composer with keyboard submission, suggested-prompt chips, a live-region status
 indicator, TypeScript types, responsive CSS, theme variables, tests, examples,
-and an MIT license. Version `v0.2.0` adds the typed, keyboard-accessible
-ChangeReviewCard with tests and an example. Home Huddle consumes this release directly,
-demonstrating that the package works outside its own repository.
+and an MIT license. Version `v0.2.0` added the typed, keyboard-accessible
+ChangeReviewCard. The `0.3.0` candidate adds review lifecycle states, multiple-instance
+label correctness, IME-aware multiline composition, explicit limits, accessible
+history navigation, and reduced-motion behavior. Its independent example and
+React 18/19 consumer tests exercise the actual built archive, including types,
+CSS, and ESM/CJS exports. Home Huddle consumes that same archive locally.
 
 This matters because conversational demos often duplicate fragile chat UI and
 copy provider branding. The kit gives developers a tested, neutral base that
 can be adapted to their own product identity.
+
+## Demonstration sequence
+
+Use fictional names and dates generated relative to the recording day. Show actual
+model responses; fixture recordings must be labeled as UI demonstrations.
+
+1. Describe a new 4–6 PM meal-preparation plan with two people sharing one oven,
+   and a third setting the table plus attending a fixed 20-minute call at 5 PM.
+   Open the captured requirements and assumptions.
+2. Show parallel independent work while the oven tasks remain sequential.
+3. Change the vegetable cook's availability to 5–6 PM. Inspect the moved cooking
+   time and preserved 5 PM call; choose Apply, then Undo.
+4. Ask for two conflicting fixed activities for the same person. Show the
+   explanation and the next decision needed rather than a fabricated schedule.
+5. Confirm the dates and time zone, export the calendar, and explain the opt-in
+   read-only snapshot. Show the AWS call count and latency.
+6. Briefly show the kit's independent example: multiple conversations and the
+   accessible proposal lifecycle. Link its contribution and test evidence.
+
+Finish the public video and attach its URL only after recording the candidate
+actually being submitted. The video is still outstanding.
 
 ## Product feedback draft
 
@@ -114,6 +157,15 @@ can be adapted to their own product identity.
   model output needs schedule validation beyond a JSON schema.
 
 ## Friction log
+
+Reviewed September 18, 2026 against the local Nova 2 Lite candidate. Existing
+observations below are historical; dates of original encounters were not recorded.
+Use the current rules and SDK documentation before presenting them as unresolved
+provider issues.
+
+References: [hackathon rules](https://amazonappdev2026.devpost.com/rules),
+[Bedrock API keys](https://docs.aws.amazon.com/bedrock/latest/userguide/api-keys.html),
+[Nova inference](https://docs.aws.amazon.com/nova/latest/nova2-userguide/core-inference.html).
 
 ### 1. Choosing JavaScript authentication
 
@@ -160,7 +212,82 @@ can be adapted to their own product identity.
   call, source, and evidence panel explicit.
 - **Suggestion:** Publish a small reference simulation and submission rubric.
 
-## Final verification
+### 4. Diagnosing structured planning failures
+
+- **Observed:** September 17, 2026; reassessed during the September 18 candidate work.
+- **Task:** Produce parallel and cross-month custom schedules and precise revisions
+  with Nova 2 Lite over Converse.
+- **Steps:** Run the fictional 14-case local campaign, then target four failed cases.
+- **Expected:** A valid plan or a precise explanation of a conflicting requirement.
+- **Actual:** Four valid requests repeatedly exhausted validation repairs. The old
+  error response did not expose call counts; its report could only bound usage.
+- **Severity:** High for the application release gate.
+- **Workaround:** Separate requirement interpretation from scheduling, preserve
+  authoritative constraints, add final-state checks and safe diagnostics, and use
+  independently authored expected results. A bounded timing-only repair now
+  resolves overlaps in otherwise complete new plans without changing activities,
+  people, dates, or durations; revisions retain their separate validation path.
+- **Suggestion:** Publish realistic multi-constraint tool-use examples and guidance
+  for classifying truncated/invalid structured output and repair costs.
+- **Attribution:** This is an application/model interaction, not evidence of an AWS
+  service defect. The past-date, publication, revision-scope, and storage bugs were
+  application bugs. The new campaign must establish whether remaining failures
+  are resolved; unit tests cannot establish model reliability.
+
+### 5. Constraint capture can hide a scheduling error
+
+- **Observed:** September 18, 2026, local candidate campaigns.
+- **Reproduction:** Run `meal-shared-oven` and `gathering` from the independently
+  specified thirty-case corpus with `npm run test:quality`.
+- **Actual:** Candidate iterations published overlapping exclusive oven jobs and
+  a group setup before its preparation tasks. Their captured checklists omitted
+  constraints, so validation against those checklists alone could not catch them.
+- **Response:** Stop on independently detected published violations; preserve the
+  failed observations; add conservative capture-completeness checks and regression
+  tests. A later valid retry never erases a violation from the same source version.
+- **Attribution:** Application interpretation/validation defects, not AWS service
+  outages. The current-source gate in the linked report is the release decision;
+  successful fixture tests are insufficient evidence of planning quality.
+
+### 6. September 23 quality-campaign failures
+
+- **Reproduction:** Run the thirty-case local corpus against source fingerprint
+  `5c797d2317eacbf7`, using the separate 150-call ledger and fictional requests.
+- **Observed:** Of 22 current-source cases, nineteen passed and three failed.
+  `maximum-tasks` and `revision-add` stopped at the application's 30-second
+  per-call timeout. `infeasible-fixed` exhausted its three-call budget with
+  `INVALID_TOOL_OUTPUT` despite an overlapping fixed-appointment request. No
+  current-source plan was published with an independently detected hard-constraint
+  violation. Eight cases and required repeats still lack current-source evidence.
+- **Response:** Local candidate code now shares a 95-second request deadline,
+  gives an individual Bedrock call at most 60 seconds within it, and returns a
+  deterministic conflict for validated, overlapping fixed commitments. Focused
+  fake-gateway tests cover both fixes; the targeted live recheck is below.
+- **Attribution:** The timeouts match an application-defined abort. The conflict
+  outcome is an application/model orchestration defect. Neither observation
+  establishes a Bedrock service fault.
+- **Targeted recheck:** On September 23, 2026, the user authorized only the three
+  failed cases. At source fingerprint `164d297a90fdce74`, `maximum-tasks` passed
+  in three calls, `revision-add` in two, and `infeasible-fixed` in two. The
+  independent checks found no published hard-constraint violation. Previously
+  passing cases were not rerun on this source.
+- **Remaining limit:** The original ledger is preserved with a nine-call
+  extension. It contains 146 known completed calls plus nine reserved for three
+  interrupted requests, a conservative upper bound of 155/159. The same-source
+  gate remains unverified by the user's narrower testing choice.
+
+## Current candidate completion checklist
+
+- [ ] Current-source live quality gate met and linked.
+- [ ] Firefox application checks observed on a host where its browser can launch.
+- [ ] Actual VoiceOver/desktop screen-reader walkthrough recorded.
+- [ ] Five real usability sessions completed; outcome claims match observations.
+- [ ] Candidate release/deployment separately requested and performed.
+- [ ] Public demonstration video recorded and linked.
+
+## Historical deployed baseline verification
+
+These checks describe the earlier deployment, not the current uncommitted candidate.
 
 - [x] Verify Nova 2 Lite access with a direct, low-token Bedrock Converse call.
 - [x] Make Conversation Display Kit public and verify a clean-cache `npm ci`

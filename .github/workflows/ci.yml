@@ -24,7 +24,20 @@ jobs:
         run: npm ci --cache "$RUNNER_TEMP/home-huddle-npm"
       - run: npm run lint
       - run: npm run typecheck
+      - run: npm run typecheck:browser
+      - run: npm run typecheck:scripts
       - run: npm test
+      - name: Install browser engines
+        run: npx playwright install --with-deps chromium firefox webkit
+      - name: Run stubbed browser tests
+        run: npm run test:browser
+      - name: Preserve browser screenshots and traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-test-artifacts
+          path: output/playwright/
+          if-no-files-found: ignore
       - run: npm run build
       - name: Verify packaged Lambda cold start
         run: |

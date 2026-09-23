@@ -5,6 +5,9 @@ dist-lambda/
 dist-pages/
 coverage/
 .playwright-cli/
+output/playwright/
+output/playwright-*/
+output/*.log
 .env
 .env.*
 !.env.example
