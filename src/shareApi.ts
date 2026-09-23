@@ -1,34 +1,35 @@
+import { z } from "zod";
 import type { HouseholdPlan } from "../shared/contracts";
+import { shareCreateRequestSchema, shareResolveRequestSchema, shareSnapshotSchema } from "../shared/shareContracts";
+import { requestJson } from "./request";
 
-export type SharedSnapshot = {
-  plan: HouseholdPlan;
-  date: string;
-  timeZone: string;
-  expiresAt: string;
-};
+const createResponseSchema = z.object({ token: z.string().regex(/^[A-Za-z0-9_-]{32}$/), expiresAt: z.iso.datetime() });
+const snapshotResponseSchema = shareSnapshotSchema.extend({ expiresAt: z.iso.datetime() });
+const errorSchema = z.object({ error: z.object({ message: z.string().min(1).max(2000) }) });
+export type SharedSnapshot = z.infer<typeof snapshotResponseSchema>;
 
-type CreateShareResponse = { token: string; expiresAt: string };
-
-async function postShare<T>(body: Record<string, unknown>): Promise<T> {
-  const response = await fetch(import.meta.env.VITE_API_URL || "/api/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  const data: unknown = await response.json().catch(() => undefined);
-  if (!response.ok) {
-    const error = data as { error?: { message?: string } } | undefined;
-    throw new Error(error?.error?.message || "Sharing is unavailable right now.");
+async function postShare<T>(body: unknown, schema: z.ZodType<T>, signal?: AbortSignal): Promise<T> {
+  try {
+    const { response, data } = await requestJson(body, { signal, timeoutMs: 15_000 });
+    if (!response.ok) {
+      const error = errorSchema.safeParse(data);
+      throw new Error(error.success ? error.data.error.message : "Sharing is unavailable right now. Please try again.");
+    }
+    const result = schema.safeParse(data);
+    if (!result.success) throw new Error("The sharing service returned an incomplete response. Please try again.");
+    return result.data;
+  } catch (error) {
+    if (error && typeof error === "object" && "name" in error && error.name === "TimeoutError") throw new Error("Sharing took too long to respond. Please try again.", { cause: error });
+    throw error;
   }
-  return data as T;
 }
 
-export function createShare(plan: HouseholdPlan, date: string, timeZone: string) {
-  return postShare<CreateShareResponse>({ action: "share-create", plan, date, timeZone });
+export function createShare(plan: HouseholdPlan, date: string, timeZone: string, signal?: AbortSignal) {
+  return postShare(shareCreateRequestSchema.parse({ action: "share-create", plan, date, timeZone }), createResponseSchema, signal);
 }
 
-export function resolveShare(token: string) {
-  return postShare<SharedSnapshot>({ action: "share-resolve", token });
+export function resolveShare(token: string, signal?: AbortSignal) {
+  return postShare(shareResolveRequestSchema.parse({ action: "share-resolve", token }), snapshotResponseSchema, signal);
 }
 
 export function shareUrl(token: string): string {
@@ -38,7 +39,7 @@ export function shareUrl(token: string): string {
 }
 
 export function shareTokenFromHash(): string | null {
-  return window.location.hash.startsWith("#share=")
-    ? window.location.hash.slice("#share=".length)
-    : null;
+  if (!window.location.hash.startsWith("#share=")) return null;
+  try { return decodeURIComponent(window.location.hash.slice("#share=".length)); }
+  catch { return ""; }
 }

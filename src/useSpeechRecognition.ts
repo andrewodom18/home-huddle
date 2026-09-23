@@ -18,6 +18,7 @@ export function useSpeechRecognition(
   );
   const [listening, setListening] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const acceptingResult = useRef(false);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const transcriptCallbackRef = useRef(onTranscript);
 
@@ -36,13 +37,16 @@ export function useSpeechRecognition(
     recognition.interimResults = false;
     recognition.lang = "en-US";
     recognition.onresult = (event) => {
+      if (!acceptingResult.current) return;
       const transcript = Array.from(event.results)
         .map((result) => result[0]?.transcript ?? "")
         .join(" ")
         .trim();
-      if (transcript) transcriptCallbackRef.current(transcript);
+      if (transcript) transcriptCallbackRef.current(transcript.slice(0, 1000));
     };
     recognition.onerror = (event) => {
+      if (!acceptingResult.current) return;
+      acceptingResult.current = false;
       setError(
         event.error === "not-allowed"
           ? "Microphone permission was not granted. You can keep typing."
@@ -50,10 +54,14 @@ export function useSpeechRecognition(
       );
       setListening(false);
     };
-    recognition.onend = () => setListening(false);
+    recognition.onend = () => { acceptingResult.current = false; setListening(false); };
     recognitionRef.current = recognition;
 
     return () => {
+      acceptingResult.current = false;
+      recognition.onresult = null;
+      recognition.onerror = null;
+      recognition.onend = null;
       recognition.abort();
       recognitionRef.current = null;
     };
@@ -67,14 +75,18 @@ export function useSpeechRecognition(
       if (!recognitionRef.current || listening) return;
       setError(null);
       try {
+        acceptingResult.current = true;
         recognitionRef.current.start();
         setListening(true);
       } catch {
+        acceptingResult.current = false;
         setError("Voice input is already active. You can keep typing.");
       }
     },
     stop() {
-      recognitionRef.current?.stop();
+      acceptingResult.current = false;
+      setError(null);
+      recognitionRef.current?.abort();
       setListening(false);
     },
   };

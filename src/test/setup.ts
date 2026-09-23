@@ -58,3 +58,10 @@ if (typeof window !== "undefined") {
     value: () => undefined,
   });
 }
+
+if (typeof Element !== "undefined") {
+  Object.defineProperty(Element.prototype, "scrollTo", {
+    configurable: true,
+    value(this: Element, options: ScrollToOptions) { if (typeof options.top === "number") this.scrollTop = options.top; },
+  });
+}

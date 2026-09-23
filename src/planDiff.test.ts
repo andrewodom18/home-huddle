@@ -1,34 +1,45 @@
 import { describe, expect, it } from "vitest";
+import { SCENARIO_REQUIREMENTS } from "../shared/scenarios";
 import type { HouseholdPlan } from "../shared/contracts";
-import { preservedFixedCommitments, reviewChanges } from "./planDiff";
+import { reviewChanges } from "./planDiff";
 
-const current: HouseholdPlan = {
-  title: "Evening", objective: "Finish together", participants: ["Maya", "Jordan"],
-  items: [
-    { id: "task-call", taskId: "call", task: "Jordan's call", assignee: "Jordan", startTime: "6:30 PM", durationMinutes: 20 },
-    { id: "task-dinner", taskId: "dinner", task: "Dinner", assignee: "Maya", startTime: "7:00 PM", durationMinutes: 30 },
-  ],
-  requirements: { source: "scenario", timeWindow: { startTime: "5:30 PM", endTime: "8:00 PM" }, tasks: [
-    { id: "call", label: "Jordan's call", durationMinutes: 20, fixedStartTime: "6:30 PM" },
-    { id: "dinner", label: "Dinner", durationMinutes: 30 },
-  ] },
-  notes: [], version: 1, updatedAt: "2026-09-16T10:00:00.000Z",
-};
-
-describe("revision comparison", () => {
-  it("matches stable task IDs and shows before and after owners and times", () => {
-    const proposal: HouseholdPlan = { ...current, version: 2, items: [
-      current.items[0],
-      { ...current.items[1], assignee: "Jordan", startTime: "7:15 PM" },
-    ] };
-    expect(reviewChanges(current, proposal)).toEqual([{
-      id: "dinner", label: "Dinner", before: "7:00 PM · Maya · 30 min", after: "7:15 PM · Jordan · 30 min",
-    }]);
-    expect(preservedFixedCommitments(current, proposal)).toEqual(["Jordan's call at 6:30 PM"]);
+describe("reviewChanges", () => {
+  it("only describes meaningful checklist changes when fields arrive in a different order", () => {
+    const requirements = structuredClone(SCENARIO_REQUIREMENTS.chores);
+    const current: HouseholdPlan = {
+      title: "Chores", objective: "Share chores", participants: ["Alex", "Sam", "Riley"],
+      items: [{ id: "task-kitchen", taskId: "kitchen", task: "Clean the kitchen", date: "2026-09-19", startTime: "9:00 AM", durationMinutes: 35, assignee: "Alex" }],
+      requirements, notes: [], version: 1, updatedAt: "2026-09-18T15:00:00Z",
+    };
+    const nextRequirements = {
+      ...requirements,
+      source: "interpreted" as const,
+      tasks: requirements.tasks.map((task) => task.id === "kitchen"
+        ? { durationMinutes: 30, label: task.label, id: task.id, date: task.date, allowedParticipants: task.allowedParticipants, kind: task.kind }
+        : Object.fromEntries(Object.entries(task).reverse()) as typeof task),
+    };
+    const proposed: HouseholdPlan = {
+      ...current, requirements: nextRequirements, version: 2,
+      items: [{ ...current.items[0], durationMinutes: 30 }],
+    };
+    expect(reviewChanges(current, proposed).map((change) => change.label)).toEqual(["Clean the kitchen", "Checklist: Clean the kitchen"]);
   });
+});
 
-  it("does not call a moved fixed commitment preserved", () => {
-    const proposal: HouseholdPlan = { ...current, items: [{ ...current.items[0], startTime: "6:40 PM" }, current.items[1]] };
-    expect(preservedFixedCommitments(current, proposal)).toEqual([]);
-  });
+it("reviews plan text, notes, removed tasks and every captured constraint", () => {
+  const current: HouseholdPlan = {
+    title: "Old title", objective: "Old objective", participants: ["Alex", "Sam"],
+    items: [{ id: "a", taskId: "a", task: "Laundry", date: "2026-10-01", startTime: "9:00 AM", durationMinutes: 20, assignee: "Alex", details: "Old details" }],
+    notes: ["Old note"], version: 1, updatedAt: "2026-09-18T15:00:00Z",
+    requirements: { source: "interpreted", timeWindow: { startTime: "9:00 AM", endTime: "11:00 AM" }, tasks: [{ id: "a", label: "Laundry", durationMinutes: 20, atLeastOneOf: ["Alex", "Sam"], fixedDate: true, date: "2026-10-01" }], assumptions: ["Use the small washer"], resources: [{ id: "washer", label: "Washer", capacity: 1 }], availability: [{ participant: "Alex", startTime: "9:00 AM", endTime: "11:00 AM" }], preferences: [{ kind: "earlier_finish", description: "Finish early" }] },
+  };
+  const next: HouseholdPlan = {
+    ...current, title: "New title", objective: "New objective", notes: ["New note"], participants: ["Alex"],
+    items: [{ ...current.items[0], taskId: "b", task: "Vacuum", details: "New details" }],
+    requirements: { ...current.requirements!, tasks: [{ id: "b", label: "Vacuum", durationMinutes: 20, requiredParticipants: ["Alex"] }], assumptions: [], availability: [], resources: [], preferences: [], workload: { participants: ["Alex"], minMinutes: 10, maxMinutes: 30 } },
+  };
+  const changes = reviewChanges(current, next);
+  expect(changes.map((change) => change.id)).toEqual(expect.arrayContaining(["title", "objective", "participants", "notes", "event-b", "removed-a", "checklist-b", "checklist-removed-a", "checklist-assumptions", "checklist-availability", "checklist-resources", "checklist-preferences", "checklist-workload"]));
+  expect(changes.find((change) => change.id === "checklist-removed-a")?.before).toContain("Alex or Sam");
+  expect(changes.find((change) => change.id === "event-b")?.after).toContain("New details");
 });

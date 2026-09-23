@@ -6,7 +6,7 @@ export function AboutPage() {
         <h1>Make room for everyone’s day.</h1>
         <p>
           Home Huddle is an independent Alexa+ concept that turns a household
-          conversation into a schedule people can share and revise.
+          conversation into a schedule across one or more days that people can share and revise.
         </p>
         <a className="info-page__start" href="./">
           Start planning <span aria-hidden="true">→</span>
@@ -18,7 +18,7 @@ export function AboutPage() {
           <h2>How it works</h2>
           <p>
             Choose an example or describe who is involved, what needs doing,
-            and your time window. When a plan is ready, its calendar appears
+            and which dates and times work. When a plan is ready, its calendar appears
             below the chat. Later changes are proposals you can apply, keep,
             or undo after applying.
           </p>

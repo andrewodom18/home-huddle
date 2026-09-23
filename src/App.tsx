@@ -4,13 +4,13 @@ import {
   ConversationDisplay,
   PromptChips,
   type ConversationStatusValue,
-  type DisplayMessage,
 } from "conversation-display-kit";
 import type {
   ChatRequest,
   ChatResponse,
   HistoryMessage,
   HouseholdPlan,
+  ScheduleEdit,
 } from "../shared/contracts";
 import { ChatApiError, sendChat } from "./api";
 import { AboutPage } from "./AboutPage";
@@ -20,40 +20,29 @@ import { PlanBoard } from "./PlanBoard";
 import { SharePanel } from "./SharePanel";
 import { SharedApp } from "./SharedApp";
 import { preservedFixedCommitments, reviewChanges } from "./planDiff";
+import { asksToMoveWholePlanDate, formatPlanDate, isValidPlanDate, isPastEventStart, pastPlanMoveIssue, planDates, requestedPlanDate, revisionTimeIssue, suggestedPlanDate, todayInZone } from "./planDate";
+import { scenarioRequirements } from "../shared/scenarios";
+import { isOutdatedExample } from "./planStatus";
 import { shareTokenFromHash } from "./shareApi";
-import { PRESET_SCENARIOS, REVISION_PROMPTS } from "./presets";
+import { presetScenarios, revisionPromptsFor } from "./presets";
 import { useSpeechRecognition } from "./useSpeechRecognition";
-
-const STORAGE_KEY = "home-huddle-state-v2";
-const OLD_STORAGE_KEY = "home-huddle-state-v1";
-
-type ConversationMessage = DisplayMessage & { contextText?: string };
-
-const WELCOME_MESSAGE: ConversationMessage = {
-  id: "welcome",
-  role: "assistant",
-  text: "Tell me who is involved, what needs to happen, and the time you have. I’ll shape it into a plan everyone can follow.",
-};
-
-type StoredState = {
-  messages: ConversationMessage[];
-  plan?: HouseholdPlan;
-  proposal?: HouseholdPlan;
-  undoPlan?: HouseholdPlan;
-  scenarioId?: ChatRequest["scenarioId"];
-  calendarDate?: string;
-  timeZone?: string;
-  meta?: ChatResponse["meta"];
-};
-
-type FailedRequest = {
-  request: ChatRequest;
-  message: string;
-  retryable: boolean;
-};
+import { loadState, STORAGE_KEY, OLD_STORAGE_KEY, WELCOME_MESSAGE, type ConversationMessage, type FailedRequest, type StoredState } from "./storedState";
+import { scrollBehavior } from "./motion";
 
 function createId() {
   return globalThis.crypto?.randomUUID?.() ?? `message-${Date.now()}`;
+}
+
+function carryEventDetails(target: HouseholdPlan, source?: HouseholdPlan): HouseholdPlan {
+  if (!source) return target;
+  const details = new Map(source.items.map((item) => [item.taskId ?? item.id, item.details]));
+  return {
+    ...target,
+    items: target.items.map((item) => {
+      const key = item.taskId ?? item.id;
+      return details.has(key) ? { ...item, details: details.get(key) } : item;
+    }),
+  };
 }
 
 function today() {
@@ -65,38 +54,28 @@ function defaultTimeZone() {
   return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 }
 
-function loadState(): StoredState {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY) ?? window.localStorage.getItem(OLD_STORAGE_KEY);
-    if (!raw) return { messages: [WELCOME_MESSAGE] };
-    const stored = JSON.parse(raw) as Partial<StoredState>;
-    if (!Array.isArray(stored.messages)) {
-      return { messages: [WELCOME_MESSAGE] };
-    }
-    return {
-      messages: stored.messages.slice(-13).map((message) =>
-        message.contextText ? { ...message, text: message.contextText } : message,
-      ),
-      plan: stored.plan,
-      proposal: stored.proposal,
-      undoPlan: stored.undoPlan,
-      scenarioId: stored.scenarioId,
-      calendarDate: stored.calendarDate,
-      timeZone: stored.timeZone,
-      meta: stored.meta,
-    };
-  } catch {
-    return { messages: [WELCOME_MESSAGE] };
-  }
-}
-
 function asHistory(messages: ConversationMessage[]): HistoryMessage[] {
-  const recent = messages.filter(({ id }) => id !== "welcome").slice(-12);
+  const recent = messages.filter(({ id, localOnly }) => id !== "welcome" && !localOnly).slice(-12);
   const firstUser = recent.findIndex(({ role }) => role === "user");
   return (firstUser < 0 ? [] : recent.slice(firstUser)).map(({ role, text, contextText }) => ({
     role,
-    text: contextText ?? text,
+    text: (contextText ?? text).slice(0, 1000),
   }));
+}
+
+function localReplyFor(message: string, hasPlan: boolean): string | undefined {
+  const normalized = message.trim().toLowerCase().replace(/[.!?,]+$/g, "").trim();
+  if (/^(hi|hi there|hello|hey|hey there|good morning|good afternoon|good evening)$/.test(normalized)) {
+    return hasPlan
+      ? "Hi! Tell me what you'd like to change in the current plan."
+      : "Hi! Tell me what needs to happen and when, or try an example.";
+  }
+  if (/^(thanks|thank you|thank you so much)$/.test(normalized)) {
+    return hasPlan
+      ? "You're welcome! I can revise the current plan whenever you need."
+      : "You're welcome! Tell me what you'd like to plan.";
+  }
+  return undefined;
 }
 
 function MicButton({
@@ -137,7 +116,9 @@ function PlannerApp() {
   const [messages, setMessages] = useState<ConversationMessage[]>(stored.messages);
   const [plan, setPlan] = useState<HouseholdPlan | undefined>(stored.plan);
   const [proposal, setProposal] = useState<HouseholdPlan | undefined>(stored.proposal);
+  const [proposalDate, setProposalDate] = useState<string | undefined>(stored.proposalDate);
   const [undoPlan, setUndoPlan] = useState<HouseholdPlan | undefined>(stored.undoPlan);
+  const [undoDate, setUndoDate] = useState<string | undefined>(stored.undoDate);
   const [scenarioId, setScenarioId] = useState<ChatRequest["scenarioId"]>(stored.scenarioId ?? stored.plan?.scenarioId);
   const [calendarDate, setCalendarDate] = useState(stored.calendarDate ?? today());
   const [timeZone, setTimeZone] = useState(stored.timeZone ?? defaultTimeZone());
@@ -145,8 +126,19 @@ function PlannerApp() {
   const [input, setInput] = useState("");
   const [showScenarios, setShowScenarios] = useState(true);
   const [pending, setPending] = useState(false);
-  const [failure, setFailure] = useState<FailedRequest | null>(null);
+  const [failure, setFailure] = useState<FailedRequest | null>(stored.failure ?? null);
+  const [dateChangeError, setDateChangeError] = useState("");
+  const [reviewError, setReviewError] = useState("");
+  const [storageWarning, setStorageWarning] = useState(stored.warning ?? "");
+  const [storageUnavailable, setStorageUnavailable] = useState(Boolean(stored.warning?.includes("memory")));
+  const focusComposer = useRef(false);
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
+  const conversationRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
   const requestId = useRef(0);
+  const scheduleEditNeedsFocus = useRef(false);
+  const editErrorRef = useRef<HTMLDivElement>(null);
+  const proposalRef = useRef<HTMLDivElement>(null);
   const isAboutPage = new URLSearchParams(window.location.search).get("page") === "about";
   const speech = useSpeechRecognition((transcript) => setInput(transcript));
 
@@ -155,11 +147,39 @@ function PlannerApp() {
   }, [isAboutPage]);
 
   useEffect(() => {
-    window.localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ messages, plan, proposal, undoPlan, scenarioId, calendarDate, timeZone, meta } satisfies StoredState),
-    );
-  }, [messages, plan, proposal, undoPlan, scenarioId, calendarDate, timeZone, meta]);
+    let active = true;
+    try {
+      window.localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ messages: messages.slice(-13), plan, proposal, proposalDate, undoPlan, undoDate, scenarioId, calendarDate, timeZone, meta, failure } satisfies StoredState),
+      );
+    } catch {
+      queueMicrotask(() => {
+        if (!active) return;
+        setStorageUnavailable(true);
+        setStorageWarning("Browser storage is unavailable. Your plan will stay in memory for this visit only. You can still export or share it.");
+      });
+    }
+    return () => { active = false; };
+  }, [messages, plan, proposal, proposalDate, undoPlan, undoDate, scenarioId, calendarDate, timeZone, meta, failure]);
+
+  useEffect(() => {
+    if (proposal) proposalRef.current?.scrollIntoView?.({ behavior: scrollBehavior(), block: "center" });
+  }, [proposal]);
+
+  useEffect(() => {
+    if (!scheduleEditNeedsFocus.current || pending) return;
+    const result = failure ? editErrorRef.current : proposal ? proposalRef.current : undefined;
+    if (!result) return;
+    result.focus();
+    scheduleEditNeedsFocus.current = false;
+  }, [failure, pending, proposal]);
+
+  useEffect(() => {
+    if (focusComposer.current && !pending && !proposal) { inputRef.current?.focus(); focusComposer.current = false; }
+  }, [pending, proposal, messages]);
+
+  useEffect(() => () => { requestId.current += 1; abortRef.current?.abort(); }, []);
 
   const status: ConversationStatusValue = failure
     ? "error"
@@ -169,28 +189,46 @@ function PlannerApp() {
         ? "thinking"
         : "idle";
 
-  function applyResponse(response: ChatResponse) {
+  function applyResponse(response: ChatResponse, request: ChatRequest) {
+    setReviewError("");
+    setDateChangeError("");
     setMessages((current) => [
       ...current,
       { id: createId(), role: "assistant", text: plan && response.plan ? `Proposed revision: ${response.reply} Review the changes before applying.` : response.reply },
     ]);
     if (response.plan) {
-      if (plan) setProposal(response.plan);
-      else { setPlan(response.plan); setUndoPlan(undefined); }
+      const acceptedDates = new Map(plan?.items.map((item) => [item.taskId ?? item.id, item.date]) ?? []);
+      const datedPlan = {
+        ...response.plan,
+        items: response.plan.items.map((item) => ({
+          ...item,
+          date: item.date ?? acceptedDates.get(item.taskId ?? item.id) ?? request.planDate ?? calendarDate,
+        })),
+      };
+      if (plan) { setProposal(datedPlan); setProposalDate(undefined); }
+      else {
+        setPlan(datedPlan);
+        setCalendarDate(planDates(datedPlan, request.planDate ?? calendarDate)[0]);
+        setUndoPlan(undefined);
+      }
     }
     setMeta(response.meta);
     setFailure(null);
   }
 
   async function execute(request: ChatRequest) {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     const activeRequest = ++requestId.current;
+    speech.stop();
     setPending(true);
     setFailure(null);
     try {
-      const response = await sendChat(request);
-      if (activeRequest === requestId.current) applyResponse(response);
+      const response = await sendChat(request, { signal: controller.signal });
+      if (activeRequest === requestId.current) applyResponse(response, request);
     } catch (error) {
-      if (activeRequest !== requestId.current) return;
+      if (activeRequest !== requestId.current || controller.signal.aborted) return;
       const apiError =
         error instanceof ChatApiError
           ? error
@@ -209,17 +247,107 @@ function PlannerApp() {
     }
   }
 
-  function submitMessage(value: string, selectedScenarioId?: ChatRequest["scenarioId"]) {
-    const message = value.trim();
-    if (!message || pending || proposal) return;
+  function proposePlanDate(nextDate: string, source: "picker" | "chat" = "picker") {
+    if (!plan || !isValidPlanDate(nextDate) || proposal || pending) return;
+    setDateChangeError("");
+    const dates = planDates(plan, calendarDate);
+    if (dates.length > 1) {
+      setMessages((current) => [...current, { id: createId(), role: "assistant", text: "This plan spans several dates. Open an activity to change its day, or ask me to move a named activity to a specific date.", localOnly: true }]);
+      return;
+    }
+    if (scenarioRequirements(plan.scenarioId, plan.scenarioAnchor)?.tasks.some((task) => task.fixedDate)) {
+      setMessages((current) => [...current, { id: createId(), role: "assistant", text: "This plan includes a fixed-date commitment. I can't move the whole plan; open a flexible activity to propose a date change instead.", localOnly: true }]);
+      return;
+    }
+    const started = plan.items.find((item) => isPastEventStart(item.date ?? calendarDate, item.startTime, timeZone));
+    if (started) {
+      setDateChangeError(`“${started.task}” has already started. Keep its recorded time and move a future activity instead.`);
+      return;
+    }
+    const pastIssue = pastPlanMoveIssue(plan, nextDate, timeZone);
+    if (pastIssue) {
+      setDateChangeError(pastIssue);
+      if (source === "chat") setMessages((current) => [...current, { id: createId(), role: "assistant", text: pastIssue, localOnly: true }]);
+      return;
+    }
+    const currentDate = dates[0];
+    if (nextDate === currentDate) {
+      if (source === "chat") setMessages((current) => [...current, { id: createId(), role: "assistant", text: `This plan is already set for ${formatPlanDate(nextDate)}.`, localOnly: true }]);
+      return;
+    }
+    const oldDay = formatPlanDate(currentDate).split(",")[0];
+    const newDay = formatPlanDate(nextDate).split(",")[0];
+    const replaceWeekday = (value: string) => value.replace(new RegExp(`\\b${oldDay}\\b`, "gi"), (found) => found === found.toLowerCase() ? newDay.toLowerCase() : newDay);
+    setProposal({
+      ...plan,
+      title: replaceWeekday(plan.title),
+      objective: replaceWeekday(plan.objective),
+      items: plan.items.map((item) => ({ ...item, date: nextDate })),
+      requirements: plan.requirements && {
+        ...plan.requirements,
+        tasks: plan.requirements.tasks.map((task) => task.date === currentDate ? { ...task, date: nextDate } : task),
+        timeWindows: plan.requirements.timeWindows?.map((window) => window.date === currentDate ? { ...window, date: nextDate } : window),
+        availability: plan.requirements.availability?.map((entry) => entry.date === currentDate ? { ...entry, date: nextDate } : entry),
+      },
+      version: plan.version + 1,
+      updatedAt: new Date().toISOString(),
+    });
+    setProposalDate(nextDate);
+    setMessages((current) => [...current, {
+      id: createId(), role: "assistant", text: `Proposed moving the whole plan to ${formatPlanDate(nextDate)}. Review the date before applying.`, localOnly: true,
+    }]);
+  }
 
+  function submitMessage(value: string, selectedScenarioId?: ChatRequest["scenarioId"], edit?: ScheduleEdit) {
+    const message = value.trim();
+    if (!message || pending || proposal || message.length > 1000) return;
+    speech.stop();
+
+    // Exact, social-only messages need no model call or Bedrock quota reservation.
+    const localReply = selectedScenarioId ? undefined : localReplyFor(message, Boolean(plan));
+    if (localReply) {
+      setMessages((current) => [
+        ...current,
+        { id: createId(), role: "user", text: message, localOnly: true },
+        { id: createId(), role: "assistant", text: localReply, localOnly: true },
+      ]);
+      setInput("");
+      setFailure(null);
+      return;
+    }
+
+    if (plan && !selectedScenarioId && !edit) {
+      const nextDate = requestedPlanDate(message, planDates(plan, calendarDate)[0]);
+      if (nextDate) {
+        setMessages((current) => [...current, { id: createId(), role: "user", text: message, localOnly: true }]);
+        setInput("");
+        setFailure(null);
+        proposePlanDate(nextDate, "chat");
+        return;
+      }
+      if (asksToMoveWholePlanDate(message)) {
+        setMessages((current) => [
+          ...current,
+          { id: createId(), role: "user", text: message, localOnly: true },
+          { id: createId(), role: "assistant", text: "To move a whole one-day plan, say ‘Move the plan to Sunday’ or give a full date. For a multi-day plan, name the activity and its new date.", localOnly: true },
+        ]);
+        setInput("");
+        return;
+      }
+    }
+
+    const mentionedDate = !plan && !selectedScenarioId ? suggestedPlanDate(message, new Date(), timeZone) : undefined;
     const request: ChatRequest = {
       message,
       history: asHistory(messages),
       currentPlan: plan,
       scenarioId: selectedScenarioId ?? scenarioId,
+      planDate: selectedScenarioId ? todayInZone(timeZone) : mentionedDate ?? (plan ? calendarDate : todayInZone(timeZone)),
+      timeZone,
+      edit,
     };
     if (selectedScenarioId) setScenarioId(selectedScenarioId);
+    if (mentionedDate) setCalendarDate(mentionedDate);
     setMessages((current) => [
       ...current,
       { id: createId(), role: "user", text: message },
@@ -230,15 +358,24 @@ function PlannerApp() {
 
   function reset() {
     requestId.current += 1;
+    abortRef.current?.abort();
+    scheduleEditNeedsFocus.current = false;
     speech.stop();
-    window.localStorage.removeItem(STORAGE_KEY);
-    window.localStorage.removeItem(OLD_STORAGE_KEY);
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+      window.localStorage.removeItem(OLD_STORAGE_KEY);
+    } catch {
+      setStorageUnavailable(true);
+      setStorageWarning("Browser storage is unavailable. Your new plan will stay in memory for this visit only.");
+    }
     window.history.replaceState(null, "", window.location.pathname + window.location.search);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: scrollBehavior() });
     setMessages([WELCOME_MESSAGE]);
     setPlan(undefined);
     setProposal(undefined);
+    setProposalDate(undefined);
     setUndoPlan(undefined);
+    setUndoDate(undefined);
     setScenarioId(undefined);
     setCalendarDate(today());
     setTimeZone(defaultTimeZone());
@@ -246,40 +383,94 @@ function PlannerApp() {
     setInput("");
     setShowScenarios(true);
     setFailure(null);
+    setDateChangeError("");
     setPending(false);
+    setReviewError("");
+    focusComposer.current = true;
   }
 
-  const revisionSuggestions = plan ? REVISION_PROMPTS : [];
+  const revisionSuggestions = plan ? revisionPromptsFor(plan) : [];
+  const examples = presetScenarios(todayInZone(timeZone));
   const conversationMessages = messages.filter(({ id }) => id !== "welcome");
   const hasConversation = conversationMessages.length > 0 || Boolean(plan);
-  const changes = plan && proposal ? reviewChanges(plan, proposal) : [];
+  const changes = plan && proposal ? [...(proposalDate ? [{ id: "plan-date", label: "Plan date", before: formatPlanDate(planDates(plan, calendarDate)[0]), after: formatPlanDate(proposalDate) }] : []), ...reviewChanges(plan, proposal)] : [];
   const fixed = plan && proposal ? preservedFixedCommitments(plan, proposal) : [];
+  const outdatedExample = plan ? isOutdatedExample(plan) : false;
 
   function applyProposal() {
-    if (!proposal) return;
+    if (!plan || !proposal) return;
+    const timeIssue = revisionTimeIssue(plan, proposal, calendarDate, timeZone);
+    if (timeIssue) { setReviewError(timeIssue); return; }
+    setReviewError("");
     setUndoPlan(plan);
-    setPlan(proposal);
+    setUndoDate(calendarDate);
+    setPlan(carryEventDetails(proposal, plan));
+    if (proposalDate) setCalendarDate(proposalDate);
     setProposal(undefined);
+    setProposalDate(undefined);
+    setFailure(null);
+    focusComposer.current = true;
     setMessages((current) => [...current, { id: createId(), role: "assistant", text: "Revision applied. You can undo it if you change your mind." }]);
   }
 
   function keepCurrent() {
+    setReviewError("");
     setProposal(undefined);
+    setProposalDate(undefined);
+    setFailure(null);
+    focusComposer.current = true;
     setMessages((current) => [...current, { id: createId(), role: "assistant", text: "Kept your current plan." }]);
   }
 
   function undoRevision() {
     if (!plan || !undoPlan) return;
-    setPlan({ ...undoPlan, version: plan.version + 1, updatedAt: new Date().toISOString() });
+    const timeIssue = revisionTimeIssue(plan, undoPlan, calendarDate, timeZone);
+    if (timeIssue) { setReviewError(timeIssue); return; }
+    setReviewError("");
+    setPlan({ ...carryEventDetails(undoPlan, plan), version: plan.version + 1, updatedAt: new Date().toISOString() });
+    if (undoDate) setCalendarDate(undoDate);
     setUndoPlan(undefined);
+    setUndoDate(undefined);
+    setFailure(null);
+    focusComposer.current = true;
     setMessages((current) => [...current, { id: createId(), role: "assistant", text: "Restored the previous plan." }]);
+  }
+
+  function updateEventDetails(itemId: string, details: string) {
+    const nextDetails = details.trim().slice(0, 500) || undefined;
+    setPlan((current) => {
+      if (!current) return current;
+      const item = current.items.find((entry) => entry.id === itemId);
+      if (!item || item.details === nextDetails) return current;
+      return {
+        ...current,
+        items: current.items.map((entry) => entry.id === itemId ? { ...entry, details: nextDetails } : entry),
+        // Notes do not change the schedule revision number. This also keeps a
+        // simultaneous schedule proposal based on the same plan version.
+        updatedAt: new Date().toISOString(),
+      };
+    });
+  }
+
+  function requestScheduleEdit(edit: ScheduleEdit) {
+    const item = plan?.items.find((entry) => entry.taskId === edit.taskId);
+    if (!item || pending || proposal) return;
+    const changes = [
+      edit.date && `move to ${formatPlanDate(edit.date)}`,
+      edit.startTime && `start at ${edit.startTime}`,
+      edit.durationMinutes !== undefined && `last ${edit.durationMinutes} minutes`,
+      edit.assignees && `assign to ${edit.assignees.join(", ")}`,
+    ].filter(Boolean);
+    scheduleEditNeedsFocus.current = true;
+    submitMessage(`Update “${item.task}”: ${changes.join("; ")}.`, undefined, edit);
+    conversationRef.current?.scrollIntoView?.({ behavior: scrollBehavior(), block: "center" });
   }
 
   function correctRequirement(id: string, label: string) {
     setInput(id === "window" ? "Correct time window: " : `Correct requirement ${id}: `);
     setMessages((current) => [...current, { id: createId(), role: "assistant", text: `What should I change about ${label}? Add the correction in the message box.` }]);
-    document.getElementById("conversation")?.scrollIntoView({ behavior: "smooth" });
-    window.setTimeout(() => document.getElementById("cdk-message-input")?.focus(), 100);
+    conversationRef.current?.scrollIntoView?.({ behavior: scrollBehavior() });
+    inputRef.current?.focus();
   }
 
   const conversation = (
@@ -296,19 +487,23 @@ function PlannerApp() {
       disabled={pending || Boolean(proposal)}
       emptyState=""
       messages={conversationMessages}
+      inputRef={inputRef}
+      maxLength={1000}
+      multiline
       onSubmit={(value) => submitMessage(value)}
       onValueChange={setInput}
       placeholder="Ask Home Huddle"
       status={status}
-      submitLabel={pending ? "Planning…" : "Send"}
+      statusLabels={{ thinking: "Thinking about your message…", listening: "Listening for your message…" }}
+      submitLabel={pending ? "Thinking…" : "Send"}
       value={input}
     />
   );
 
   const errorBanner = (speech.error || failure) && (
-    <div className="error-banner" role="alert">
+    <div className="error-banner" ref={editErrorRef} role="alert" tabIndex={-1}>
       <div>
-        <strong>{failure ? "Planning paused" : "Voice input paused"}</strong>
+        <strong>{failure ? "Reply paused" : "Voice input paused"}</strong>
         <span>{failure?.message ?? speech.error}</span>
       </div>
       {failure?.retryable && (
@@ -406,17 +601,19 @@ function PlannerApp() {
                 Your household conversation
               </h1>
             )}
-            <div className='stage-conversation' id='conversation'>
+            <div className='stage-conversation' id='conversation' ref={conversationRef}>
               {conversation}
               <span aria-hidden='true' className='send-hint'>
                 Send message
               </span>
             </div>
             {errorBanner}
+            {reviewError && <p className="persistence-warning" role="alert">{reviewError}</p>}
+            {storageWarning && <p className='persistence-warning' role='alert'>{storageWarning}</p>}
             {(pending || speech.listening) && (
-              <p className='conversation-feedback' role='status'>
+              <p className='conversation-feedback' aria-hidden='true'>
                 {pending
-                  ? 'Planning your schedule…'
+                  ? 'Thinking about your message…'
                   : 'Listening for your message…'}
               </p>
             )}
@@ -427,7 +624,7 @@ function PlannerApp() {
               >
                 <h2 className='screen-reader-only'>Try a starting point</h2>
                 <div className='scenario-grid'>
-                  {PRESET_SCENARIOS.map((scenario) => (
+                  {examples.map((scenario) => (
                     <button
                       aria-label={`${scenario.title}. ${scenario.description}`}
                       className='scenario-chip'
@@ -449,7 +646,7 @@ function PlannerApp() {
                   className='scenario-dismiss'
                   onClick={() => {
                     setShowScenarios(false);
-                    document.querySelector<HTMLInputElement>('.cdk-composer input')?.focus();
+                    inputRef.current?.focus();
                   }}
                   title='Hide example scenarios'
                   type='button'
@@ -462,15 +659,15 @@ function PlannerApp() {
               <PromptChips
                 disabled={pending || Boolean(proposal)}
                 label='Suggested plan revisions'
-                onSelect={setInput}
+                onSelect={(value) => { setInput(value); inputRef.current?.focus(); }}
                 suggestions={revisionSuggestions}
               />
             )}
             {plan && proposal && (
-              <div className='proposal-wrap' role='region' aria-label='Proposed revision'>
+              <div className='proposal-wrap' role='region' aria-label='Proposed revision' ref={proposalRef} tabIndex={-1}>
                 <ChangeReviewCard
                   title='Review this revision'
-                  summary={`${changes.length} changed ${changes.length === 1 ? "activity" : "activities"}. ${fixed.length ? `Preserved: ${fixed.join("; ")}.` : "Review the changes before applying."}`}
+                  summary={`${changes.length} proposed ${changes.length === 1 ? "change" : "changes"}. ${fixed.length ? `Preserved: ${fixed.join("; ")}.` : "Review the changes before applying."}`}
                   changes={changes}
                   onAccept={applyProposal}
                   onReject={keepCurrent}
@@ -500,21 +697,22 @@ function PlannerApp() {
             >
               <div className='calendar-section__heading'>
                 <span className='section-kicker'>Calendar</span>
-                <h2>Your day, in one place.</h2>
+                <h2>Your calendar</h2>
                 <p>
-                  See the plan at a glance, then keep the conversation going
-                  when life changes.
+                  Open an activity to adjust its date, time, or people.
                 </p>
               </div>
-              <PlanBoard date={calendarDate} onCorrectRequirement={correctRequirement} plan={plan} />
-              <SharePanel
+              <PlanBoard date={calendarDate} dateChangeDisabled={Boolean(proposal || pending)} dateError={dateChangeError} onDateChange={(value) => proposePlanDate(value)} onCorrectRequirement={proposal || pending ? undefined : correctRequirement} onDetailsChange={updateEventDetails} onScheduleChange={proposal || pending ? undefined : requestScheduleEdit} persistenceUnavailable={storageUnavailable} plan={plan} timeZone={timeZone} />
+              {!outdatedExample && <SharePanel
                 key={`${plan.version}-${plan.updatedAt}`}
                 plan={plan}
                 date={calendarDate}
+                dateChangeDisabled={Boolean(proposal || pending)}
                 timeZone={timeZone}
-                onDateChange={setCalendarDate}
-                onTimeZoneChange={setTimeZone}
-              />
+                dateError={dateChangeError}
+                onDateChange={(value) => proposePlanDate(value)}
+                onTimeZoneChange={(value) => { setTimeZone(value); setDateChangeError(""); }}
+              />}
               {meta && <EvidencePanel meta={meta} />}
             </section>
           )}
@@ -534,5 +732,5 @@ function PlannerApp() {
 
 export default function App() {
   const token = shareTokenFromHash();
-  return token !== null ? <SharedApp token={token} /> : <PlannerApp />;
+  return token !== null ? <SharedApp key={token} token={token} /> : <PlannerApp />;
 }

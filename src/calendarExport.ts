@@ -4,7 +4,7 @@ import type { HouseholdPlan } from "../shared/contracts";
 
 const TIME_PATTERN = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i;
 
-function localStart(date: string, time: string, timeZone: string): number {
+function localStart(date: string, time: string, durationMinutes: number, timeZone: string): number {
   const match = TIME_PATTERN.exec(time.trim());
   if (!match) throw new Error(`Invalid plan time: ${time}`);
   const hour12 = Number(match[1]);
@@ -24,6 +24,12 @@ function localStart(date: string, time: string, timeZone: string): number {
   if (!start.isValid || start.hour !== hour || start.minute !== minute) {
     throw new Error(`${time} does not exist on ${date} in ${timeZone}.`);
   }
+  if (start.getPossibleOffsets().length > 1) {
+    throw new Error(`${time} occurs twice on ${date} in ${timeZone}. Choose an unambiguous time before exporting.`);
+  }
+  if (start.plus({ minutes: durationMinutes }).offset !== start.offset) {
+    throw new Error(`The activity starting at ${time} on ${date} in ${timeZone} crosses a daylight-saving change. Choose a time entirely before or after the clock change before exporting.`);
+  }
   return start.toMillis();
 }
 
@@ -37,15 +43,16 @@ export function createCalendarFile(
   }
 
   const events: EventAttributes[] = plan.items.map((item) => {
+    const eventDate = item.date ?? date;
     const stableId = (item.taskId || item.id).replace(/[^A-Za-z0-9-]/g, "-");
     return {
-      start: localStart(date, item.startTime, timeZone),
+      start: localStart(eventDate, item.startTime, item.durationMinutes, timeZone),
       startInputType: "utc",
       startOutputType: "utc",
       duration: { minutes: item.durationMinutes },
       title: item.task,
-      description: `Assigned to: ${item.assignee}. Home Huddle plan v${plan.version}.`,
-      uid: `${date}-${stableId}@home-huddle.local`,
+      description: `Assigned to: ${item.assignee}. Home Huddle plan v${plan.version}.${item.details ? `\nDetails: ${item.details}` : ""}`,
+      uid: `${eventDate}-${stableId}@home-huddle.local`,
       sequence: plan.version,
       status: "CONFIRMED",
     };

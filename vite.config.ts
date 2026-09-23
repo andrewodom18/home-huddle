@@ -13,12 +13,13 @@ export default defineConfig({
     },
   },
   test: {
+    maxWorkers: 1,
     environment: "jsdom",
     environmentOptions: {
       jsdom: { url: "http://127.0.0.1:5173" },
     },
     setupFiles: ["./src/test/setup.ts"],
-    exclude: [...configDefaults.exclude, "conversation-display-kit/**"],
+    exclude: [...configDefaults.exclude, "conversation-display-kit/**", "e2e/**"],
     coverage: {
       reporter: ["text", "html"],
     },
