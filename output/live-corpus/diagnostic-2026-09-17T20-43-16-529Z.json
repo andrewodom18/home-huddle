@@ -1,0 +1,21 @@
+{
+  "requestCount": 1,
+  "converseCallHardCap": 3,
+  "knownConverseCalls": 0,
+  "unknownCallRequests": 1,
+  "actualCallRange": [
+    0,
+    3
+  ],
+  "previousUpperBound": 39,
+  "results": [
+    {
+      "id": "revision-exact-start",
+      "outcome": "fail",
+      "detail": "expected a tool-published plan (HTTP 502, INVALID_TOOL_OUTPUT, category: checklist preservation)",
+      "latencyMs": 13091,
+      "converseCalls": "unknown (0–3)",
+      "repairCalls": "unknown (0–2)"
+    }
+  ]
+}

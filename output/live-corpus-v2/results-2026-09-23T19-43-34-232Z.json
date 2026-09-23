@@ -1,0 +1,44 @@
+{
+  "sourceFingerprint": "164d297a90fdce74",
+  "callCap": 159,
+  "spentUpperBound": 155,
+  "results": [
+    {
+      "attempt": "76-maximum-tasks",
+      "id": "maximum-tasks",
+      "sourceFingerprint": "164d297a90fdce74",
+      "outcome": "pass",
+      "calls": 3,
+      "latencyMs": 44351,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "77-revision-add",
+      "id": "revision-add",
+      "sourceFingerprint": "164d297a90fdce74",
+      "outcome": "pass",
+      "calls": 2,
+      "latencyMs": 7703,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "78-infeasible-fixed",
+      "id": "infeasible-fixed",
+      "sourceFingerprint": "164d297a90fdce74",
+      "outcome": "pass",
+      "calls": 2,
+      "latencyMs": 5974,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200
+    }
+  ]
+}

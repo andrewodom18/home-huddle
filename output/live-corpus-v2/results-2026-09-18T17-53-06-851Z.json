@@ -1,0 +1,32 @@
+{
+  "sourceFingerprint": "776e31b9d983b202",
+  "callCap": 150,
+  "spentUpperBound": 5,
+  "results": [
+    {
+      "attempt": "1-free-parallel",
+      "id": "free-parallel",
+      "sourceFingerprint": "776e31b9d983b202",
+      "outcome": "pass",
+      "calls": 2,
+      "latencyMs": 10072,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "2-free-cross-month",
+      "id": "free-cross-month",
+      "sourceFingerprint": "776e31b9d983b202",
+      "outcome": "blocked",
+      "calls": "unknown",
+      "latencyMs": 5823,
+      "hardIssues": [],
+      "qualityIssues": [
+        "network-or-unreadable-response"
+      ]
+    }
+  ]
+}

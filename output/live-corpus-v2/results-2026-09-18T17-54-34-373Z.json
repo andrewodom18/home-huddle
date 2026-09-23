@@ -1,0 +1,61 @@
+{
+  "sourceFingerprint": "a2345fb595a96bcb",
+  "callCap": 150,
+  "spentUpperBound": 9,
+  "results": [
+    {
+      "attempt": "3-free-parallel",
+      "id": "free-parallel",
+      "sourceFingerprint": "a2345fb595a96bcb",
+      "outcome": "pass",
+      "calls": 2,
+      "latencyMs": 9803,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "4-free-cross-month",
+      "id": "free-cross-month",
+      "sourceFingerprint": "a2345fb595a96bcb",
+      "outcome": "pass",
+      "calls": 2,
+      "latencyMs": 7985,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "5-revision-exact-start",
+      "id": "revision-exact-start",
+      "sourceFingerprint": "a2345fb595a96bcb",
+      "outcome": "fail",
+      "calls": 0,
+      "latencyMs": 5,
+      "hardIssues": [],
+      "qualityIssues": [
+        "VALIDATION"
+      ],
+      "status": 400,
+      "code": "VALIDATION"
+    },
+    {
+      "attempt": "6-revision-assignee",
+      "id": "revision-assignee",
+      "sourceFingerprint": "a2345fb595a96bcb",
+      "outcome": "fail",
+      "calls": 0,
+      "latencyMs": 3,
+      "hardIssues": [],
+      "qualityIssues": [
+        "VALIDATION"
+      ],
+      "status": 400,
+      "code": "VALIDATION"
+    }
+  ]
+}

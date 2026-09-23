@@ -1,0 +1,96 @@
+{
+  "sourceFingerprint": "acebad003e2c5ac8",
+  "callCap": 150,
+  "spentUpperBound": 21,
+  "results": [
+    {
+      "attempt": "7-free-parallel",
+      "id": "free-parallel",
+      "sourceFingerprint": "acebad003e2c5ac8",
+      "outcome": "pass",
+      "calls": 2,
+      "latencyMs": 9377,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "8-free-cross-month",
+      "id": "free-cross-month",
+      "sourceFingerprint": "acebad003e2c5ac8",
+      "outcome": "pass",
+      "calls": 2,
+      "latencyMs": 8901,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "9-revision-exact-start",
+      "id": "revision-exact-start",
+      "sourceFingerprint": "acebad003e2c5ac8",
+      "outcome": "pass",
+      "calls": 1,
+      "latencyMs": 5929,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 2
+    },
+    {
+      "attempt": "10-revision-assignee",
+      "id": "revision-assignee",
+      "sourceFingerprint": "acebad003e2c5ac8",
+      "outcome": "pass",
+      "calls": 3,
+      "latencyMs": 21173,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 2
+    },
+    {
+      "attempt": "11-revision-add",
+      "id": "revision-add",
+      "sourceFingerprint": "acebad003e2c5ac8",
+      "outcome": "pass",
+      "calls": 2,
+      "latencyMs": 7377,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "12-revision-availability",
+      "id": "revision-availability",
+      "sourceFingerprint": "acebad003e2c5ac8",
+      "outcome": "fail",
+      "calls": 2,
+      "latencyMs": 3531,
+      "hardIssues": [],
+      "qualityIssues": [
+        "expected-plan-received-clarification"
+      ],
+      "status": 200
+    },
+    {
+      "attempt": "13-ambiguous-target",
+      "id": "ambiguous-target",
+      "sourceFingerprint": "acebad003e2c5ac8",
+      "outcome": "pass",
+      "calls": 0,
+      "latencyMs": 6,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200
+    }
+  ]
+}

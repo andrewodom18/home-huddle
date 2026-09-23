@@ -1,0 +1,20 @@
+{
+  "sourceFingerprint": "dba7aebdbd4cc25a",
+  "callCap": 150,
+  "spentUpperBound": 66,
+  "results": [
+    {
+      "attempt": "35-meal-shared-oven",
+      "id": "meal-shared-oven",
+      "sourceFingerprint": "dba7aebdbd4cc25a",
+      "outcome": "pass",
+      "calls": 2,
+      "latencyMs": 8341,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    }
+  ]
+}

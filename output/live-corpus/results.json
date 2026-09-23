@@ -1,0 +1,124 @@
+{
+  "requestCount": 14,
+  "converseCallHardCap": 42,
+  "knownConverseCalls": 12,
+  "unknownCallRequests": 4,
+  "actualCallRange": [
+    12,
+    24
+  ],
+  "results": [
+    {
+      "id": "preset-weekday",
+      "outcome": "pass",
+      "detail": "Expected outcome and validated calendar",
+      "latencyMs": 19366,
+      "converseCalls": "2",
+      "repairCalls": "1"
+    },
+    {
+      "id": "preset-chores",
+      "outcome": "pass",
+      "detail": "Expected outcome and validated calendar",
+      "latencyMs": 4846,
+      "converseCalls": "1",
+      "repairCalls": "0"
+    },
+    {
+      "id": "preset-outing",
+      "outcome": "pass",
+      "detail": "Expected outcome and validated calendar",
+      "latencyMs": 17314,
+      "converseCalls": "2",
+      "repairCalls": "1"
+    },
+    {
+      "id": "free-parallel",
+      "outcome": "fail",
+      "detail": "expected a tool-published plan",
+      "latencyMs": 13229,
+      "converseCalls": "unknown (0–3)",
+      "repairCalls": "unknown (0–2)"
+    },
+    {
+      "id": "free-cross-month",
+      "outcome": "fail",
+      "detail": "expected a tool-published plan",
+      "latencyMs": 10889,
+      "converseCalls": "unknown (0–3)",
+      "repairCalls": "unknown (0–2)"
+    },
+    {
+      "id": "missing-information",
+      "outcome": "pass",
+      "detail": "Expected outcome and validated calendar",
+      "latencyMs": 1140,
+      "converseCalls": "1",
+      "repairCalls": "0"
+    },
+    {
+      "id": "unrelated-question",
+      "outcome": "pass",
+      "detail": "Expected outcome and validated calendar",
+      "latencyMs": 932,
+      "converseCalls": "1",
+      "repairCalls": "0"
+    },
+    {
+      "id": "impossible-fixed-edit",
+      "outcome": "pass",
+      "detail": "Expected safe rejection (VALIDATION)",
+      "latencyMs": 9,
+      "converseCalls": "0",
+      "repairCalls": "0"
+    },
+    {
+      "id": "ambiguous-event-edit",
+      "outcome": "pass",
+      "detail": "Expected safe rejection (VALIDATION)",
+      "latencyMs": 6,
+      "converseCalls": "0",
+      "repairCalls": "0"
+    },
+    {
+      "id": "revision-exact-date",
+      "outcome": "pass",
+      "detail": "Expected outcome and validated calendar",
+      "latencyMs": 7276,
+      "converseCalls": "1",
+      "repairCalls": "0"
+    },
+    {
+      "id": "revision-exact-start",
+      "outcome": "fail",
+      "detail": "expected a tool-published plan",
+      "latencyMs": 11748,
+      "converseCalls": "unknown (0–3)",
+      "repairCalls": "unknown (0–2)"
+    },
+    {
+      "id": "revision-duration",
+      "outcome": "pass",
+      "detail": "Expected outcome and validated calendar",
+      "latencyMs": 11885,
+      "converseCalls": "3",
+      "repairCalls": "2"
+    },
+    {
+      "id": "revision-assignee",
+      "outcome": "fail",
+      "detail": "expected a tool-published plan",
+      "latencyMs": 12639,
+      "converseCalls": "unknown (0–3)",
+      "repairCalls": "unknown (0–2)"
+    },
+    {
+      "id": "revision-gap-dependency",
+      "outcome": "pass",
+      "detail": "Expected outcome and validated calendar",
+      "latencyMs": 3844,
+      "converseCalls": "1",
+      "repairCalls": "0"
+    }
+  ]
+}

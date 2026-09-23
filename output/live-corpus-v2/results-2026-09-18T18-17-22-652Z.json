@@ -1,0 +1,75 @@
+{
+  "sourceFingerprint": "8757787ec05716e7",
+  "callCap": 150,
+  "spentUpperBound": 45,
+  "results": [
+    {
+      "attempt": "20-preset-weekday",
+      "id": "preset-weekday",
+      "sourceFingerprint": "8757787ec05716e7",
+      "outcome": "fail",
+      "calls": 3,
+      "latencyMs": 57204,
+      "hardIssues": [],
+      "qualityIssues": [
+        "INVALID_TOOL_OUTPUT"
+      ],
+      "status": 502,
+      "code": "INVALID_TOOL_OUTPUT"
+    },
+    {
+      "attempt": "21-preset-chores",
+      "id": "preset-chores",
+      "sourceFingerprint": "8757787ec05716e7",
+      "outcome": "pass",
+      "calls": 2,
+      "latencyMs": 13214,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "22-preset-outing",
+      "id": "preset-outing",
+      "sourceFingerprint": "8757787ec05716e7",
+      "outcome": "pass",
+      "calls": 1,
+      "latencyMs": 11743,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "23-meal-shared-oven",
+      "id": "meal-shared-oven",
+      "sourceFingerprint": "8757787ec05716e7",
+      "outcome": "fail",
+      "calls": 2,
+      "latencyMs": 8561,
+      "hardIssues": [
+        "task-3:missing-or-duplicate"
+      ],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 0.6666666666666666,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "24-revision-availability",
+      "id": "revision-availability",
+      "sourceFingerprint": "8757787ec05716e7",
+      "outcome": "pass",
+      "calls": 1,
+      "latencyMs": 5829,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 2
+    }
+  ]
+}

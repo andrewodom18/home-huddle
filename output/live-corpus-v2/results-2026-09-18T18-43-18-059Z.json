@@ -1,0 +1,166 @@
+{
+  "sourceFingerprint": "ae1ee2582b4da1ba",
+  "callCap": 150,
+  "spentUpperBound": 91,
+  "results": [
+    {
+      "attempt": "36-preset-weekday",
+      "id": "preset-weekday",
+      "sourceFingerprint": "ae1ee2582b4da1ba",
+      "outcome": "pass",
+      "calls": 3,
+      "latencyMs": 44807,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "37-preset-chores",
+      "id": "preset-chores",
+      "sourceFingerprint": "ae1ee2582b4da1ba",
+      "outcome": "pass",
+      "calls": 1,
+      "latencyMs": 6998,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "38-preset-outing",
+      "id": "preset-outing",
+      "sourceFingerprint": "ae1ee2582b4da1ba",
+      "outcome": "pass",
+      "calls": 1,
+      "latencyMs": 12668,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "39-free-parallel",
+      "id": "free-parallel",
+      "sourceFingerprint": "ae1ee2582b4da1ba",
+      "outcome": "pass",
+      "calls": 2,
+      "latencyMs": 12299,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "40-free-cross-month",
+      "id": "free-cross-month",
+      "sourceFingerprint": "ae1ee2582b4da1ba",
+      "outcome": "fail",
+      "calls": 3,
+      "latencyMs": 9102,
+      "hardIssues": [],
+      "qualityIssues": [
+        "INVALID_TOOL_OUTPUT"
+      ],
+      "status": 502,
+      "code": "INVALID_TOOL_OUTPUT"
+    },
+    {
+      "attempt": "41-meal-shared-oven",
+      "id": "meal-shared-oven",
+      "sourceFingerprint": "ae1ee2582b4da1ba",
+      "outcome": "pass",
+      "calls": 2,
+      "latencyMs": 9225,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "42-laundry-resource",
+      "id": "laundry-resource",
+      "sourceFingerprint": "ae1ee2582b4da1ba",
+      "outcome": "pass",
+      "calls": 2,
+      "latencyMs": 8953,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "43-caregiving-handoff",
+      "id": "caregiving-handoff",
+      "sourceFingerprint": "ae1ee2582b4da1ba",
+      "outcome": "pass",
+      "calls": 2,
+      "latencyMs": 11701,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "44-school-transport",
+      "id": "school-transport",
+      "sourceFingerprint": "ae1ee2582b4da1ba",
+      "outcome": "pass",
+      "calls": 2,
+      "latencyMs": 9626,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "45-roommate-eligibility",
+      "id": "roommate-eligibility",
+      "sourceFingerprint": "ae1ee2582b4da1ba",
+      "outcome": "pass",
+      "calls": 2,
+      "latencyMs": 12123,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "46-solo-routine",
+      "id": "solo-routine",
+      "sourceFingerprint": "ae1ee2582b4da1ba",
+      "outcome": "pass",
+      "calls": 2,
+      "latencyMs": 7723,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "47-gathering",
+      "id": "gathering",
+      "sourceFingerprint": "ae1ee2582b4da1ba",
+      "outcome": "fail",
+      "calls": 3,
+      "latencyMs": 17219,
+      "hardIssues": [
+        "required-order-or-gap"
+      ],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "requestCount": 4,
+  "converseCallHardCap": 12,
+  "knownConverseCalls": 0,
+  "unknownCallRequests": 4,
+  "actualCallRange": [
+    0,
+    12
+  ],
+  "previousUpperBound": 24,
+  "results": [
+    {
+      "id": "free-parallel",
+      "outcome": "fail",
+      "detail": "expected a tool-published plan (HTTP 502, INVALID_TOOL_OUTPUT)",
+      "latencyMs": 14243,
+      "converseCalls": "unknown (0–3)",
+      "repairCalls": "unknown (0–2)"
+    },
+    {
+      "id": "free-cross-month",
+      "outcome": "fail",
+      "detail": "expected a tool-published plan (HTTP 502, INVALID_TOOL_OUTPUT)",
+      "latencyMs": 11037,
+      "converseCalls": "unknown (0–3)",
+      "repairCalls": "unknown (0–2)"
+    },
+    {
+      "id": "revision-exact-start",
+      "outcome": "fail",
+      "detail": "expected a tool-published plan (HTTP 502, INVALID_TOOL_OUTPUT)",
+      "latencyMs": 12324,
+      "converseCalls": "unknown (0–3)",
+      "repairCalls": "unknown (0–2)"
+    },
+    {
+      "id": "revision-assignee",
+      "outcome": "fail",
+      "detail": "expected a tool-published plan (HTTP 502, INVALID_TOOL_OUTPUT)",
+      "latencyMs": 12838,
+      "converseCalls": "unknown (0–3)",
+      "repairCalls": "unknown (0–2)"
+    }
+  ]
+}

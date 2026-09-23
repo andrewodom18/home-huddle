@@ -1,0 +1,129 @@
+{
+  "sourceFingerprint": "dba7aebdbd4cc25a",
+  "callCap": 150,
+  "spentUpperBound": 61,
+  "results": [
+    {
+      "attempt": "25-preset-weekday",
+      "id": "preset-weekday",
+      "sourceFingerprint": "dba7aebdbd4cc25a",
+      "outcome": "pass",
+      "calls": 1,
+      "latencyMs": 18047,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "26-preset-chores",
+      "id": "preset-chores",
+      "sourceFingerprint": "dba7aebdbd4cc25a",
+      "outcome": "pass",
+      "calls": 1,
+      "latencyMs": 7031,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "27-preset-outing",
+      "id": "preset-outing",
+      "sourceFingerprint": "dba7aebdbd4cc25a",
+      "outcome": "pass",
+      "calls": 1,
+      "latencyMs": 12573,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "28-free-parallel",
+      "id": "free-parallel",
+      "sourceFingerprint": "dba7aebdbd4cc25a",
+      "outcome": "pass",
+      "calls": 2,
+      "latencyMs": 9502,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "29-free-cross-month",
+      "id": "free-cross-month",
+      "sourceFingerprint": "dba7aebdbd4cc25a",
+      "outcome": "fail",
+      "calls": 3,
+      "latencyMs": 12377,
+      "hardIssues": [],
+      "qualityIssues": [
+        "INVALID_TOOL_OUTPUT"
+      ],
+      "status": 502,
+      "code": "INVALID_TOOL_OUTPUT"
+    },
+    {
+      "attempt": "30-meal-shared-oven",
+      "id": "meal-shared-oven",
+      "sourceFingerprint": "dba7aebdbd4cc25a",
+      "outcome": "fail",
+      "calls": 2,
+      "latencyMs": 8004,
+      "hardIssues": [
+        "shared-resource-overlap"
+      ],
+      "qualityIssues": [
+        "resource-1:captured-capacity-or-use"
+      ],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "31-laundry-resource",
+      "id": "laundry-resource",
+      "sourceFingerprint": "dba7aebdbd4cc25a",
+      "outcome": "pass",
+      "calls": 2,
+      "latencyMs": 8493,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "32-caregiving-handoff",
+      "id": "caregiving-handoff",
+      "sourceFingerprint": "dba7aebdbd4cc25a",
+      "outcome": "pass",
+      "calls": 2,
+      "latencyMs": 15847,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "33-school-transport",
+      "id": "school-transport",
+      "sourceFingerprint": "dba7aebdbd4cc25a",
+      "outcome": "pass",
+      "calls": 2,
+      "latencyMs": 9600,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    }
+  ]
+}

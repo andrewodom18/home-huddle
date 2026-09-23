@@ -1,0 +1,85 @@
+{
+  "sourceFingerprint": "daee085e17e8167c",
+  "callCap": 150,
+  "spentUpperBound": 101,
+  "results": [
+    {
+      "attempt": "48-preset-weekday",
+      "id": "preset-weekday",
+      "sourceFingerprint": "daee085e17e8167c",
+      "outcome": "pass",
+      "calls": 1,
+      "latencyMs": 13569,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "49-preset-chores",
+      "id": "preset-chores",
+      "sourceFingerprint": "daee085e17e8167c",
+      "outcome": "pass",
+      "calls": 1,
+      "latencyMs": 6261,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "50-preset-outing",
+      "id": "preset-outing",
+      "sourceFingerprint": "daee085e17e8167c",
+      "outcome": "pass",
+      "calls": 1,
+      "latencyMs": 14596,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "51-free-parallel",
+      "id": "free-parallel",
+      "sourceFingerprint": "daee085e17e8167c",
+      "outcome": "fail",
+      "calls": 2,
+      "latencyMs": 5372,
+      "hardIssues": [],
+      "qualityIssues": [
+        "expected-plan-received-clarification"
+      ],
+      "status": 200
+    },
+    {
+      "attempt": "52-free-cross-month",
+      "id": "free-cross-month",
+      "sourceFingerprint": "daee085e17e8167c",
+      "outcome": "pass",
+      "calls": 3,
+      "latencyMs": 21164,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    },
+    {
+      "attempt": "53-meal-shared-oven",
+      "id": "meal-shared-oven",
+      "sourceFingerprint": "daee085e17e8167c",
+      "outcome": "pass",
+      "calls": 2,
+      "latencyMs": 8778,
+      "hardIssues": [],
+      "qualityIssues": [],
+      "status": 200,
+      "coverage": 1,
+      "changedExistingActivities": 0
+    }
+  ]
+}

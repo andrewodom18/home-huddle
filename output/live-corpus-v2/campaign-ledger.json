@@ -1,0 +1,630 @@
+{
+  "version": 2,
+  "cap": 159,
+  "attempts": [
+    {
+      "id": "1-free-parallel",
+      "caseId": "free-parallel",
+      "sourceFingerprint": "776e31b9d983b202",
+      "startedAt": "2026-09-18T17:53:06.851Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "2-free-cross-month",
+      "caseId": "free-cross-month",
+      "sourceFingerprint": "776e31b9d983b202",
+      "startedAt": "2026-09-18T17:53:16.925Z",
+      "ceiling": 3,
+      "settled": false
+    },
+    {
+      "id": "3-free-parallel",
+      "caseId": "free-parallel",
+      "sourceFingerprint": "a2345fb595a96bcb",
+      "startedAt": "2026-09-18T17:54:34.373Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "4-free-cross-month",
+      "caseId": "free-cross-month",
+      "sourceFingerprint": "a2345fb595a96bcb",
+      "startedAt": "2026-09-18T17:54:44.178Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "5-revision-exact-start",
+      "caseId": "revision-exact-start",
+      "sourceFingerprint": "a2345fb595a96bcb",
+      "startedAt": "2026-09-18T17:54:52.164Z",
+      "ceiling": 0,
+      "settled": true
+    },
+    {
+      "id": "6-revision-assignee",
+      "caseId": "revision-assignee",
+      "sourceFingerprint": "a2345fb595a96bcb",
+      "startedAt": "2026-09-18T17:54:52.170Z",
+      "ceiling": 0,
+      "settled": true
+    },
+    {
+      "id": "7-free-parallel",
+      "caseId": "free-parallel",
+      "sourceFingerprint": "acebad003e2c5ac8",
+      "startedAt": "2026-09-18T18:10:02.046Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "8-free-cross-month",
+      "caseId": "free-cross-month",
+      "sourceFingerprint": "acebad003e2c5ac8",
+      "startedAt": "2026-09-18T18:10:11.425Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "9-revision-exact-start",
+      "caseId": "revision-exact-start",
+      "sourceFingerprint": "acebad003e2c5ac8",
+      "startedAt": "2026-09-18T18:10:20.328Z",
+      "ceiling": 1,
+      "settled": true
+    },
+    {
+      "id": "10-revision-assignee",
+      "caseId": "revision-assignee",
+      "sourceFingerprint": "acebad003e2c5ac8",
+      "startedAt": "2026-09-18T18:10:26.259Z",
+      "ceiling": 3,
+      "settled": true
+    },
+    {
+      "id": "11-revision-add",
+      "caseId": "revision-add",
+      "sourceFingerprint": "acebad003e2c5ac8",
+      "startedAt": "2026-09-18T18:10:47.433Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "12-revision-availability",
+      "caseId": "revision-availability",
+      "sourceFingerprint": "acebad003e2c5ac8",
+      "startedAt": "2026-09-18T18:10:54.812Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "13-ambiguous-target",
+      "caseId": "ambiguous-target",
+      "sourceFingerprint": "acebad003e2c5ac8",
+      "startedAt": "2026-09-18T18:10:58.346Z",
+      "ceiling": 0,
+      "settled": true
+    },
+    {
+      "id": "14-preset-weekday",
+      "caseId": "preset-weekday",
+      "sourceFingerprint": "acebad003e2c5ac8",
+      "startedAt": "2026-09-18T18:11:21.379Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "15-preset-chores",
+      "caseId": "preset-chores",
+      "sourceFingerprint": "acebad003e2c5ac8",
+      "startedAt": "2026-09-18T18:11:37.213Z",
+      "ceiling": 3,
+      "settled": true
+    },
+    {
+      "id": "16-preset-outing",
+      "caseId": "preset-outing",
+      "sourceFingerprint": "acebad003e2c5ac8",
+      "startedAt": "2026-09-18T18:11:54.916Z",
+      "ceiling": 3,
+      "settled": true
+    },
+    {
+      "id": "17-meal-shared-oven",
+      "caseId": "meal-shared-oven",
+      "sourceFingerprint": "acebad003e2c5ac8",
+      "startedAt": "2026-09-18T18:12:31.507Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "18-laundry-resource",
+      "caseId": "laundry-resource",
+      "sourceFingerprint": "acebad003e2c5ac8",
+      "startedAt": "2026-09-18T18:12:38.925Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "19-caregiving-handoff",
+      "caseId": "caregiving-handoff",
+      "sourceFingerprint": "acebad003e2c5ac8",
+      "startedAt": "2026-09-18T18:12:50.063Z",
+      "ceiling": 3,
+      "settled": false
+    },
+    {
+      "id": "20-preset-weekday",
+      "caseId": "preset-weekday",
+      "sourceFingerprint": "8757787ec05716e7",
+      "startedAt": "2026-09-18T18:17:22.652Z",
+      "ceiling": 3,
+      "settled": true
+    },
+    {
+      "id": "21-preset-chores",
+      "caseId": "preset-chores",
+      "sourceFingerprint": "8757787ec05716e7",
+      "startedAt": "2026-09-18T18:18:19.860Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "22-preset-outing",
+      "caseId": "preset-outing",
+      "sourceFingerprint": "8757787ec05716e7",
+      "startedAt": "2026-09-18T18:18:33.075Z",
+      "ceiling": 1,
+      "settled": true
+    },
+    {
+      "id": "23-meal-shared-oven",
+      "caseId": "meal-shared-oven",
+      "sourceFingerprint": "8757787ec05716e7",
+      "startedAt": "2026-09-18T18:18:44.820Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "24-revision-availability",
+      "caseId": "revision-availability",
+      "sourceFingerprint": "8757787ec05716e7",
+      "startedAt": "2026-09-18T18:18:53.382Z",
+      "ceiling": 1,
+      "settled": true
+    },
+    {
+      "id": "25-preset-weekday",
+      "caseId": "preset-weekday",
+      "sourceFingerprint": "dba7aebdbd4cc25a",
+      "startedAt": "2026-09-18T18:29:14.993Z",
+      "ceiling": 1,
+      "settled": true
+    },
+    {
+      "id": "26-preset-chores",
+      "caseId": "preset-chores",
+      "sourceFingerprint": "dba7aebdbd4cc25a",
+      "startedAt": "2026-09-18T18:29:33.042Z",
+      "ceiling": 1,
+      "settled": true
+    },
+    {
+      "id": "27-preset-outing",
+      "caseId": "preset-outing",
+      "sourceFingerprint": "dba7aebdbd4cc25a",
+      "startedAt": "2026-09-18T18:29:40.076Z",
+      "ceiling": 1,
+      "settled": true
+    },
+    {
+      "id": "28-free-parallel",
+      "caseId": "free-parallel",
+      "sourceFingerprint": "dba7aebdbd4cc25a",
+      "startedAt": "2026-09-18T18:29:52.651Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "29-free-cross-month",
+      "caseId": "free-cross-month",
+      "sourceFingerprint": "dba7aebdbd4cc25a",
+      "startedAt": "2026-09-18T18:30:02.156Z",
+      "ceiling": 3,
+      "settled": true
+    },
+    {
+      "id": "30-meal-shared-oven",
+      "caseId": "meal-shared-oven",
+      "sourceFingerprint": "dba7aebdbd4cc25a",
+      "startedAt": "2026-09-18T18:30:14.537Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "31-laundry-resource",
+      "caseId": "laundry-resource",
+      "sourceFingerprint": "dba7aebdbd4cc25a",
+      "startedAt": "2026-09-18T18:30:22.544Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "32-caregiving-handoff",
+      "caseId": "caregiving-handoff",
+      "sourceFingerprint": "dba7aebdbd4cc25a",
+      "startedAt": "2026-09-18T18:30:31.038Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "33-school-transport",
+      "caseId": "school-transport",
+      "sourceFingerprint": "dba7aebdbd4cc25a",
+      "startedAt": "2026-09-18T18:30:46.889Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "34-roommate-eligibility",
+      "caseId": "roommate-eligibility",
+      "sourceFingerprint": "dba7aebdbd4cc25a",
+      "startedAt": "2026-09-18T18:30:56.493Z",
+      "ceiling": 3,
+      "settled": false
+    },
+    {
+      "id": "35-meal-shared-oven",
+      "caseId": "meal-shared-oven",
+      "sourceFingerprint": "dba7aebdbd4cc25a",
+      "startedAt": "2026-09-18T18:32:10.830Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "36-preset-weekday",
+      "caseId": "preset-weekday",
+      "sourceFingerprint": "ae1ee2582b4da1ba",
+      "startedAt": "2026-09-18T18:43:18.059Z",
+      "ceiling": 3,
+      "settled": true
+    },
+    {
+      "id": "37-preset-chores",
+      "caseId": "preset-chores",
+      "sourceFingerprint": "ae1ee2582b4da1ba",
+      "startedAt": "2026-09-18T18:44:02.868Z",
+      "ceiling": 1,
+      "settled": true
+    },
+    {
+      "id": "38-preset-outing",
+      "caseId": "preset-outing",
+      "sourceFingerprint": "ae1ee2582b4da1ba",
+      "startedAt": "2026-09-18T18:44:09.868Z",
+      "ceiling": 1,
+      "settled": true
+    },
+    {
+      "id": "39-free-parallel",
+      "caseId": "free-parallel",
+      "sourceFingerprint": "ae1ee2582b4da1ba",
+      "startedAt": "2026-09-18T18:44:22.537Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "40-free-cross-month",
+      "caseId": "free-cross-month",
+      "sourceFingerprint": "ae1ee2582b4da1ba",
+      "startedAt": "2026-09-18T18:44:34.839Z",
+      "ceiling": 3,
+      "settled": true
+    },
+    {
+      "id": "41-meal-shared-oven",
+      "caseId": "meal-shared-oven",
+      "sourceFingerprint": "ae1ee2582b4da1ba",
+      "startedAt": "2026-09-18T18:44:43.946Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "42-laundry-resource",
+      "caseId": "laundry-resource",
+      "sourceFingerprint": "ae1ee2582b4da1ba",
+      "startedAt": "2026-09-18T18:44:53.174Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "43-caregiving-handoff",
+      "caseId": "caregiving-handoff",
+      "sourceFingerprint": "ae1ee2582b4da1ba",
+      "startedAt": "2026-09-18T18:45:02.130Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "44-school-transport",
+      "caseId": "school-transport",
+      "sourceFingerprint": "ae1ee2582b4da1ba",
+      "startedAt": "2026-09-18T18:45:13.834Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "45-roommate-eligibility",
+      "caseId": "roommate-eligibility",
+      "sourceFingerprint": "ae1ee2582b4da1ba",
+      "startedAt": "2026-09-18T18:45:23.464Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "46-solo-routine",
+      "caseId": "solo-routine",
+      "sourceFingerprint": "ae1ee2582b4da1ba",
+      "startedAt": "2026-09-18T18:45:35.589Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "47-gathering",
+      "caseId": "gathering",
+      "sourceFingerprint": "ae1ee2582b4da1ba",
+      "startedAt": "2026-09-18T18:45:43.313Z",
+      "ceiling": 3,
+      "settled": true
+    },
+    {
+      "id": "48-preset-weekday",
+      "caseId": "preset-weekday",
+      "sourceFingerprint": "daee085e17e8167c",
+      "startedAt": "2026-09-18T18:54:49.684Z",
+      "ceiling": 1,
+      "settled": true
+    },
+    {
+      "id": "49-preset-chores",
+      "caseId": "preset-chores",
+      "sourceFingerprint": "daee085e17e8167c",
+      "startedAt": "2026-09-18T18:55:03.255Z",
+      "ceiling": 1,
+      "settled": true
+    },
+    {
+      "id": "50-preset-outing",
+      "caseId": "preset-outing",
+      "sourceFingerprint": "daee085e17e8167c",
+      "startedAt": "2026-09-18T18:55:09.518Z",
+      "ceiling": 1,
+      "settled": true
+    },
+    {
+      "id": "51-free-parallel",
+      "caseId": "free-parallel",
+      "sourceFingerprint": "daee085e17e8167c",
+      "startedAt": "2026-09-18T18:55:24.117Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "52-free-cross-month",
+      "caseId": "free-cross-month",
+      "sourceFingerprint": "daee085e17e8167c",
+      "startedAt": "2026-09-18T18:55:29.492Z",
+      "ceiling": 3,
+      "settled": true
+    },
+    {
+      "id": "53-meal-shared-oven",
+      "caseId": "meal-shared-oven",
+      "sourceFingerprint": "daee085e17e8167c",
+      "startedAt": "2026-09-18T18:55:50.658Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "54-free-parallel",
+      "caseId": "free-parallel",
+      "sourceFingerprint": "5c797d2317eacbf7",
+      "startedAt": "2026-09-23T19:28:06.648Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "55-gathering",
+      "caseId": "gathering",
+      "sourceFingerprint": "5c797d2317eacbf7",
+      "startedAt": "2026-09-23T19:28:17.621Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "56-availability",
+      "caseId": "availability",
+      "sourceFingerprint": "5c797d2317eacbf7",
+      "startedAt": "2026-09-23T19:28:26.718Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "57-split-availability",
+      "caseId": "split-availability",
+      "sourceFingerprint": "5c797d2317eacbf7",
+      "startedAt": "2026-09-23T19:28:34.343Z",
+      "ceiling": 3,
+      "settled": true
+    },
+    {
+      "id": "58-shared-car",
+      "caseId": "shared-car",
+      "sourceFingerprint": "5c797d2317eacbf7",
+      "startedAt": "2026-09-23T19:29:02.673Z",
+      "ceiling": 3,
+      "settled": true
+    },
+    {
+      "id": "59-visible-assumptions",
+      "caseId": "visible-assumptions",
+      "sourceFingerprint": "5c797d2317eacbf7",
+      "startedAt": "2026-09-23T19:29:15.521Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "60-dated-windows",
+      "caseId": "dated-windows",
+      "sourceFingerprint": "5c797d2317eacbf7",
+      "startedAt": "2026-09-23T19:29:21.539Z",
+      "ceiling": 3,
+      "settled": true
+    },
+    {
+      "id": "61-repeated-labels",
+      "caseId": "repeated-labels",
+      "sourceFingerprint": "5c797d2317eacbf7",
+      "startedAt": "2026-09-23T19:29:33.830Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "62-remaining-day",
+      "caseId": "remaining-day",
+      "sourceFingerprint": "5c797d2317eacbf7",
+      "startedAt": "2026-09-23T19:29:41.870Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "63-maximum-tasks",
+      "caseId": "maximum-tasks",
+      "sourceFingerprint": "5c797d2317eacbf7",
+      "startedAt": "2026-09-23T19:29:47.461Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "64-missing-information",
+      "caseId": "missing-information",
+      "sourceFingerprint": "5c797d2317eacbf7",
+      "startedAt": "2026-09-23T19:30:24.046Z",
+      "ceiling": 1,
+      "settled": true
+    },
+    {
+      "id": "65-ambiguous-target",
+      "caseId": "ambiguous-target",
+      "sourceFingerprint": "5c797d2317eacbf7",
+      "startedAt": "2026-09-23T19:30:25.313Z",
+      "ceiling": 0,
+      "settled": true
+    },
+    {
+      "id": "66-infeasible-fixed",
+      "caseId": "infeasible-fixed",
+      "sourceFingerprint": "5c797d2317eacbf7",
+      "startedAt": "2026-09-23T19:30:25.329Z",
+      "ceiling": 3,
+      "settled": true
+    },
+    {
+      "id": "67-infeasible-duration",
+      "caseId": "infeasible-duration",
+      "sourceFingerprint": "5c797d2317eacbf7",
+      "startedAt": "2026-09-23T19:30:36.861Z",
+      "ceiling": 3,
+      "settled": true
+    },
+    {
+      "id": "68-revision-exact-start",
+      "caseId": "revision-exact-start",
+      "sourceFingerprint": "5c797d2317eacbf7",
+      "startedAt": "2026-09-23T19:30:44.490Z",
+      "ceiling": 3,
+      "settled": true
+    },
+    {
+      "id": "69-revision-assignee",
+      "caseId": "revision-assignee",
+      "sourceFingerprint": "5c797d2317eacbf7",
+      "startedAt": "2026-09-23T19:31:03.845Z",
+      "ceiling": 3,
+      "settled": true
+    },
+    {
+      "id": "70-revision-cancel",
+      "caseId": "revision-cancel",
+      "sourceFingerprint": "5c797d2317eacbf7",
+      "startedAt": "2026-09-23T19:31:26.067Z",
+      "ceiling": 3,
+      "settled": true
+    },
+    {
+      "id": "71-revision-add",
+      "caseId": "revision-add",
+      "sourceFingerprint": "5c797d2317eacbf7",
+      "startedAt": "2026-09-23T19:31:34.498Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "72-revision-availability",
+      "caseId": "revision-availability",
+      "sourceFingerprint": "5c797d2317eacbf7",
+      "startedAt": "2026-09-23T19:32:06.048Z",
+      "ceiling": 1,
+      "settled": true
+    },
+    {
+      "id": "73-revision-elapsed-history",
+      "caseId": "revision-elapsed-history",
+      "sourceFingerprint": "5c797d2317eacbf7",
+      "startedAt": "2026-09-23T19:32:11.149Z",
+      "ceiling": 1,
+      "settled": true
+    },
+    {
+      "id": "74-free-cross-month",
+      "caseId": "free-cross-month",
+      "sourceFingerprint": "5c797d2317eacbf7",
+      "startedAt": "2026-09-23T19:32:16.882Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "75-meal-shared-oven",
+      "caseId": "meal-shared-oven",
+      "sourceFingerprint": "5c797d2317eacbf7",
+      "startedAt": "2026-09-23T19:32:25.357Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "76-maximum-tasks",
+      "caseId": "maximum-tasks",
+      "sourceFingerprint": "164d297a90fdce74",
+      "startedAt": "2026-09-23T19:43:34.232Z",
+      "ceiling": 3,
+      "settled": true
+    },
+    {
+      "id": "77-revision-add",
+      "caseId": "revision-add",
+      "sourceFingerprint": "164d297a90fdce74",
+      "startedAt": "2026-09-23T19:44:18.586Z",
+      "ceiling": 2,
+      "settled": true
+    },
+    {
+      "id": "78-infeasible-fixed",
+      "caseId": "infeasible-fixed",
+      "sourceFingerprint": "164d297a90fdce74",
+      "startedAt": "2026-09-23T19:44:26.294Z",
+      "ceiling": 2,
+      "settled": true
+    }
+  ]
+}
