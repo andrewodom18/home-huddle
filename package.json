@@ -18,6 +18,7 @@
     "typecheck:browser": "tsc --noEmit --project e2e/tsconfig.json",
     "typecheck:scripts": "tsc --noEmit --project scripts/tsconfig.json",
     "test:quality": "HOME_HUDDLE_LIVE_QUALITY=1 tsx scripts/live-quality.ts",
+    "test:quality:v3": "HOME_HUDDLE_LIVE_QUALITY=1 tsx scripts/live-quality-v3.ts",
     "smoke:bedrock": "LIVE_BEDROCK=1 vitest run server/bedrock.live.test.ts",
     "start": "node dist-server/index.js",
     "test": "vitest run",

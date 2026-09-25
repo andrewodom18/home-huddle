@@ -6,9 +6,9 @@ assignable schedule and supports conversational revisions.
 
 [Try the public demo](https://andrewodom18.github.io/home-huddle/).
 
-The demo runs the older deployed baseline. The features below describe the current
-source candidate, which has not been deployed. Public deployment is a separate,
-manual workflow after the matching API is available.
+The features below describe the source candidate. The public page and API are
+deployed separately; check their deployment records before treating the live
+demo as the same version.
 
 Conversation state stays in the browser. The Node API does not persist prompts;
 it sends model-bound planning requests to Amazon Bedrock. The public page runs on
@@ -27,6 +27,10 @@ GitHub Pages with a small AWS Lambda backend.
 - Separate requirement interpretation and schedule generation for custom requests.
   Captured requirements become server-owned before scheduling, with stable task
   IDs, availability windows, shared-resource capacity, assumptions, and preferences.
+- A first-plan review for custom requests: the original request, interpreted
+  activities and constraints, dates, time zone, and assumptions appear above
+  the calendar preview. The user accepts the draft, corrects a requirement,
+  or starts over. A correction returns for review before the plan is saved.
 - Apply/Keep current review for revisions, one-level undo, a calendar that
   navigates nonconsecutive days,
   `.ics` download, and opt-in seven-day read-only snapshot links.
@@ -72,6 +76,14 @@ otherwise it produces a draft with visible assumptions. The three-call maximum
 includes interpretation, scheduling, and any repairs. The deterministic checker
 verifies captured requirements, not whether a model understood every word; the
 independent evaluation corpus checks that additional dimension.
+
+For a custom request, the first generated schedule is a pending draft. Its
+review shows the captured checklist and assumptions before **Use this plan**
+can make it the accepted plan. The user can add or correct a requirement and
+review the replacement draft, or start over. Validation covers the captured
+requirements; the review asks the user to spot any omitted requirement. A
+pending draft cannot be edited as an accepted event, shared, or exported.
+Presets keep the faster example flow with a visible checklist summary.
 
 First plans favor parallel work by different people. After validation, a
 bounded, provider-independent compaction pass moves flexible activities
@@ -173,8 +185,10 @@ Zod schemas and TypeScript types.
 The same hosted POST URL also accepts `share-create` and `share-resolve`
 actions. The browser keeps the unguessable token in the URL fragment and
 sends it in a POST body. Snapshots contain the accepted plan, date, and time
-zone—not chat history—and expire after seven days. Sharing is for fictional
-demo data only; anyone with the link can read the snapshot until expiry.
+zone—not chat history—and expire after seven days. A shared view identifies
+when its snapshot was created; later plan edits do not update that link.
+Sharing is for fictional demo data only; anyone with the link can read the
+snapshot until expiry.
 
 `GET /api/health` reports whether local Bedrock authentication is configured
 but never exposes credentials. The hosted Lambda URL accepts the configured
@@ -194,24 +208,29 @@ npm run test:browser
 ```
 
 The independent 30-case real-service quality campaign is opt-in and local-only.
-Start the authenticated local API first, then run:
+The prior v2 campaign is preserved under `output/live-corpus-v2/`; its 159-call
+allowance is nearly exhausted and does not establish a current-source pass.
+A separate v3 campaign is prepared but has **not** been authorized or run.
+After a separate 150-call authorization, freeze the candidate, start the
+matching authenticated local API, and run:
 
 ```bash
-npm run test:quality
+HOME_HUDDLE_V3_AUTHORIZED=150 npm run test:quality:v3
 ```
 
-It reserves calls before sending requests and retains a resumable ledger under
-`output/live-corpus-v2/`, separate from the previous campaign. The original
-150-call ceiling received a user-authorized nine-call extension for only the
-three previously failing cases. Rechecks use
-`HOME_HUDDLE_CASES=free-parallel,free-cross-month npm run test:quality`; they consume
-the same allowance. Never delete the ledger to obtain a new allowance. Source
-fingerprints distinguish results before and after planner changes. No prompts or
-response bodies are saved. See `docs/quality-campaign.md` for gates and limitations.
+The v3 runner reserves calls before each request and retains a resumable ledger
+under `output/live-corpus-v3/`, separate from v2. It pins the source fingerprint,
+runs all 30 cases and the four required repeats, and fails
+closed if the source changes. Never delete a ledger to obtain another allowance.
+No prompts or response bodies are saved. See `docs/quality-campaign.md` for the
+gate, authorization state, and limitations.
 
 The smaller historical `smoke:bedrock` command is only a connectivity check and
 does not establish planning quality. Do not run it outside an agreed call allowance.
 The public Lambda uses an IAM execution role and does not need a bearer key.
+The preserved campaign mixes source versions and does not pass the same-version
+release gate. A new campaign needs its own approved call ceiling and must run
+all cases and required repeats on one frozen source fingerprint.
 
 ## Public demo deployment
 

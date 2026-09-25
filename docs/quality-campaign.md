@@ -1,7 +1,7 @@
 # Quality campaign and release evidence
 
-The current `dev` working tree is the candidate under test, including uncommitted
-changes. Public deployment and the published kit release are separate versions.
+The current `dev` source is the candidate under test. Public deployment and the
+published kit release have separate version histories.
 Do not infer deployment from a local build or browser fixture result.
 
 ## Repeatable checks
@@ -54,10 +54,27 @@ offline tests pass.
 
 ## Budget and privacy
 
-The original campaign allowed 150 Converse calls including repairs. On September
+The v3 campaign is prepared but **has no authorization and has not run**. A
+separate 150-call ceiling must be explicitly authorized before setting
+`HOME_HUDDLE_V3_AUTHORIZED=150` and running `npm run test:quality:v3`. The runner
+also requires `HOME_HUDDLE_LIVE_QUALITY=1`, set by that npm script. Without both
+guards it stops before contacting the API. It uses `output/live-corpus-v3/` only,
+pins the first run's source fingerprint in its own ledger, and
+reserves three calls before each request. A clean run schedules all thirty cases
+and a second observation of the four critical cases, with at most 102 reserved
+calls before any targeted investigation. The same gate above evaluates all v3
+observations; a later success cannot erase a published hard violation or a failed
+observation. Source changes stop reuse of the v3 ledger, and a new campaign would
+need another explicit allowance. Dates roll forward on each run so a resumed
+campaign does not schedule a previously future case in the past. The operator
+must restart the local API from the
+frozen candidate before running; a source fingerprint of files cannot prove that
+a stale API process matches them.
+
+The historical v2 campaign allowed 150 Converse calls including repairs. On September
 23 the user authorized a recheck of only the three failed cases; this adds at
 most nine reserved calls for a combined ceiling of 159. The original ledger and
-all its attempts remain in place. The initial
+all its attempts remain in place under `output/live-corpus-v2/`. The initial
 thirty requests reserve at most ninety calls; sixty calls are reserved for targeted
 checks. Reconciled unused reservations remain available within the same ceiling.
 Every attempt reserves three calls before
@@ -65,11 +82,12 @@ network I/O. Exact safe diagnostics reconcile successful/failed attempts; absent
 diagnostics or interrupted requests retain all three reserved calls. An exclusive
 lock prevents concurrent runners, and malformed ledgers fail closed.
 
-Run `npm run test:quality` only with a configured current local API. Select targeted
-cases using `HOME_HUDDLE_CASES=id,id`; they share the same ledger. The old campaign
-is preserved under `output/live-corpus/`. Never reset a ledger or raise the cap
-without a new explicit allowance. Authentication or service blocking conditions
-stop the runner rather than spend repeated calls.
+`npm run test:quality` remains the historical v2 runner; do not use it to claim
+v3 coverage. For either campaign, select targeted cases with
+`HOME_HUDDLE_CASES=id,id`; they consume that campaign's own allowance. The oldest
+campaign is preserved under `output/live-corpus/`. Never reset a ledger or raise
+a cap without a new explicit allowance. Authentication or service blocking
+conditions stop the runner rather than spend repeated calls.
 
 Reports record classifications, coverage, source fingerprints, call counts, and
 latency. They omit prompts, response bodies, credentials, and request IDs. Use

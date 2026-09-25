@@ -1,9 +1,9 @@
 # Home Huddle — Submission Draft
 
 This file collects the candidate narrative, evidence, and remaining submission
-work. The September 23 candidate improvements have not been deployed. Historical
-deployment checks below apply
-only to the older public version; current quality evidence belongs in
+work. Source commits and public deployments have separate version histories.
+Historical deployment checks below apply only to the earlier public version; current quality
+evidence belongs in
 `docs/implementation-validation.md` and `output/live-corpus-v2/report.md`.
 
 **September 23 status:** the three previously failing live cases now pass on the
@@ -30,6 +30,14 @@ reliable typed interaction, browser-local chat persistence, opt-in read-only
 snapshot sharing, and a visible AWS evidence panel. No physical Amazon device
 is required for this Alexa+ simulation path.
 
+Custom first plans enter a review step before becoming the accepted calendar.
+The request, captured requirements, dates and time zone, and assumptions are
+visible above the draft. The user can use it, correct a missing or mistaken
+requirement and review again, or start over. This matters because the validator
+checks requirements it captured; it cannot prove that every request detail was
+understood. The three fictional presets retain a faster example flow with a
+visible checklist summary.
+
 ## How it works
 
 1. The React client sends a message, the last 12 text messages, and any current
@@ -46,13 +54,18 @@ is required for this Alexa+ simulation path.
    After a valid `publish_household_plan` result, it publishes the plan directly
    without another Nova call. Successful requirement capture sends a tool result
    back to Nova so scheduling can use the accepted checklist.
-5. The browser renders and saves the first plan locally. Later plans are
-   proposals with changed times and owners for Apply or Keep current, plus undo.
+5. The browser shows a custom first plan as a pending draft and saves it
+   separately from the accepted plan. It cannot be exported or shared before
+   **Use this plan**. A correction passes through the checked revision path and
+   returns for review. Later plans are proposals with changed times and owners
+   for Apply or Keep current, plus undo.
    The Lambda uses IAM to call
    Bedrock and a DynamoDB transaction to reserve quota before each model call.
    Logs do not include prompts or household details.
-6. The user can export a dated `.ics` file or opt in to an expiring read-only
-   share link. A separate DynamoDB table holds only the plan snapshot, not chat.
+6. The user can export an accepted plan as a dated `.ics` file or opt in to an
+   expiring read-only share link. The shared view labels its creation time and
+   does not change when the original plan changes. A separate DynamoDB table
+   holds only the plan snapshot, not chat.
 
 ## Track and mini challenges
 
@@ -65,7 +78,8 @@ is required for this Alexa+ simulation path.
   MIT-licensed React project released during the hackathon. The local `0.3.0`
   candidate improves reusable approval flows, accessibility, and independent
   package consumption. Home Huddle tests its vendored build; `v0.2.0` remains the
-  published baseline until a separately requested release.
+  published baseline. The current contribution is available in the public
+  repository at the linked feature commit below.
 
 ## Required links
 
@@ -73,7 +87,9 @@ is required for this Alexa+ simulation path.
 - Primary repository: https://github.com/andrewodom18/home-huddle
 - Additional open-source repository:
   https://github.com/andrewodom18/conversation-display-kit
-- Open-source contribution/release URL:
+- Open-source contribution URL:
+  https://github.com/andrewodom18/conversation-display-kit/commit/5e03c7425d4e9abc55bc385c98c5b0ce3bda7035
+- Open-source published baseline:
   https://github.com/andrewodom18/conversation-display-kit/releases/tag/v0.2.0
 - Live demo: https://andrewodom18.github.io/home-huddle/
 - Demo video: **WIP**
@@ -102,14 +118,15 @@ model responses; fixture recordings must be labeled as UI demonstrations.
 
 1. Describe a new 4–6 PM meal-preparation plan with two people sharing one oven,
    and a third setting the table plus attending a fixed 20-minute call at 5 PM.
-   Open the captured requirements and assumptions.
+   Review the draft's captured requirements and assumptions above the preview.
+   Add or correct a requirement, review the new draft, then use the plan.
 2. Show parallel independent work while the oven tasks remain sequential.
 3. Change the vegetable cook's availability to 5–6 PM. Inspect the moved cooking
    time and preserved 5 PM call; choose Apply, then Undo.
 4. Ask for two conflicting fixed activities for the same person. Show the
    explanation and the next decision needed rather than a fabricated schedule.
 5. Confirm the dates and time zone, export the calendar, and explain the opt-in
-   read-only snapshot. Show the AWS call count and latency.
+   read-only snapshot and its creation time. Show the AWS call count and latency.
 6. Briefly show the kit's independent example: multiple conversations and the
    accessible proposal lifecycle. Link its contribution and test evidence.
 
@@ -166,6 +183,10 @@ provider issues.
 References: [hackathon rules](https://amazonappdev2026.devpost.com/rules),
 [Bedrock API keys](https://docs.aws.amazon.com/bedrock/latest/userguide/api-keys.html),
 [Nova inference](https://docs.aws.amazon.com/nova/latest/nova2-userguide/core-inference.html).
+Entries 1–3 describe documentation and onboarding friction. Entries 4–6
+describe application/model interaction defects found during our testing; they
+are not reports of AWS service outages. The latter belong in the product
+quality evidence even if they are submitted as development friction.
 
 ### 1. Choosing JavaScript authentication
 
@@ -281,13 +302,16 @@ References: [hackathon rules](https://amazonappdev2026.devpost.com/rules),
 - [ ] Current-source live quality gate met and linked.
 - [ ] Firefox application checks observed on a host where its browser can launch.
 - [ ] Actual VoiceOver/desktop screen-reader walkthrough recorded.
-- [ ] Five real usability sessions completed; outcome claims match observations.
-- [ ] Candidate release/deployment separately requested and performed.
+- [ ] Five independent usability sessions completed on named candidate versions;
+      at least four of five complete the custom plan and revision unassisted,
+      or shortfalls and retests are reported without claiming the target.
+- [ ] Matching frontend and API build identifiers recorded for the public
+      candidate; deployment smoke checks observed on that version.
 - [ ] Public demonstration video recorded and linked.
 
 ## Historical deployed baseline verification
 
-These checks describe the earlier deployment, not the current uncommitted candidate.
+These checks describe the earlier deployment, not a verification of the current candidate.
 
 - [x] Verify Nova 2 Lite access with a direct, low-token Bedrock Converse call.
 - [x] Make Conversation Display Kit public and verify a clean-cache `npm ci`
