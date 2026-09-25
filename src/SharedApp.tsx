@@ -46,6 +46,12 @@ export function SharedApp({ token }: { token: string }) {
             <p className="shared-page__details">
               {dateSummary} · {snapshot.timeZone} · Read only · Expires {new Date(snapshot.expiresAt).toLocaleDateString()}
             </p>
+            <p className="shared-page__details">
+              {snapshot.createdAt ? (
+                <>Snapshot created <time dateTime={snapshot.createdAt}>{new Date(snapshot.createdAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short", timeZone: snapshot.timeZone })}</time>.</>
+              ) : "Creation time unavailable for this older link."}
+              {" "}This is a read-only copy. Changes to the original plan after sharing will not appear here.
+            </p>
             <PlanBoard date={snapshot.date} plan={snapshot.plan} timeZone={snapshot.timeZone} readOnly />
             <button
               className="shared-page__download"

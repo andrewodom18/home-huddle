@@ -144,6 +144,7 @@ describe("share service", () => {
     expect(resolved.plan.title).toBe("Fictional evening");
     expect(resolved.date).toBe("2026-09-18");
     expect(resolved.timeZone).toBe("America/Chicago");
+    expect(resolved.createdAt).toBe("2026-09-16T12:00:00.000Z");
     resolved.plan.title = "Changed after resolve";
     expect((await service.resolve({ action: "share-resolve", token: result.token })).plan.title).toBe("Fictional evening");
     request.plan.title = "Fictional evening";
@@ -173,6 +174,7 @@ describe("share service", () => {
     expect(put?.Item?.id?.S).toBe(`share#${hash}`);
     expect(put?.Item?.snapshot?.S).toContain("Fictional evening");
     expect(JSON.parse(put?.Item?.snapshot?.S ?? "{}").plan.items[0].date).toBe("2026-10-07");
+    expect(JSON.parse(put?.Item?.snapshot?.S ?? "{}").createdAt).toBe("2026-09-16T12:00:00.000Z");
     expect(put?.Item?.snapshot?.S).not.toContain("history");
     expect(JSON.stringify(transaction.input)).not.toContain(result.token);
     expect(transaction.input.TransactItems).toHaveLength(3);
@@ -190,6 +192,19 @@ describe("share service", () => {
       code: "SHARE_NOT_FOUND",
       status: 404,
     });
+  });
+
+  it("resolves an older stored snapshot without a creation timestamp", async () => {
+    const service = createShareService({
+      tableName: "test-shares",
+      now: () => new Date("2026-09-16T12:00:00.000Z"),
+      send: async (command) => command instanceof GetItemCommand
+        ? { Item: { snapshot: { S: JSON.stringify({ plan: request.plan, date: request.date, timeZone: request.timeZone }) }, expiresAt: { N: String(Date.parse("2026-09-23T12:00:00.000Z") / 1000) } } }
+        : {},
+    });
+    const result = await service.resolve({ action: "share-resolve", token: "A".repeat(32) });
+    expect(result.createdAt).toBeUndefined();
+    expect(result.plan.title).toBe("Fictional evening");
   });
 
   it("refuses a previously stored conflicting snapshot on resolve", async () => {

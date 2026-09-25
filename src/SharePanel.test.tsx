@@ -32,6 +32,16 @@ describe("share recovery", () => {
     await user.click(screen.getByRole("button", { name: "Retry loading" }));
     expect(await screen.findByRole("heading", { name: "Chores" })).toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByText(/Creation time unavailable for this older link/)).toBeInTheDocument();
+    expect(screen.getByText(/Changes to the original plan after sharing will not appear here/)).toBeInTheDocument();
+  });
+  it("identifies when a new read-only snapshot was created", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ plan, date: "2026-10-01", timeZone: "America/Chicago", createdAt: "2026-09-18T12:00:00.000Z", expiresAt: "2026-10-05T12:00:00Z" }))));
+    const { container } = render(<SharedApp token={"a".repeat(32)} />);
+    expect(await screen.findByRole("heading", { name: "Chores" })).toBeInTheDocument();
+    expect(container.querySelector("time[datetime]"))?.toHaveAttribute("datetime", "2026-09-18T12:00:00.000Z");
+    expect(screen.getByText(/Snapshot created/)).toBeInTheDocument();
+    expect(screen.getByText(/Changes to the original plan after sharing will not appear here/)).toBeInTheDocument();
   });
   it("provides a copyable link when clipboard permission is denied", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ token: "a".repeat(32), expiresAt: "2026-10-05T12:00:00Z" }))));

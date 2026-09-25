@@ -87,10 +87,10 @@ function isCheckedSnapshot(snapshot: ShareSnapshot): boolean {
   return scheduleIssues(plan, { message: "", history: [], planDate: date }, plan.requirements).length === 0;
 }
 
-function verifiedSnapshot(request: ShareCreateRequest): ShareSnapshot {
+function verifiedSnapshot(request: ShareCreateRequest, createdAt: string): ShareSnapshot {
   // Older browser-saved plans may still contain model-written, unchecked notes.
   const parsed = shareSnapshotSchema.safeParse({
-    plan: { ...request.plan, notes: [] }, date: request.date, timeZone: request.timeZone,
+    plan: { ...request.plan, notes: [] }, date: request.date, timeZone: request.timeZone, createdAt,
   });
   if (!parsed.success || !isCheckedSnapshot(parsed.data)) {
     throw new ShareError("VALIDATION", "This plan has not passed schedule checks. Review it before sharing.", 400);
@@ -178,9 +178,9 @@ export function createShareService(options: ShareOptions = {}): ShareService {
     };
     return {
       async create(request) {
-        const snapshot = verifiedSnapshot(request);
-        snapshotJson(snapshot);
         const date = now();
+        const snapshot = verifiedSnapshot(request, date.toISOString());
+        snapshotJson(snapshot);
         reserve("create", date);
         const nowSeconds = Math.floor(date.valueOf() / 1000);
         for (const [hash, record] of records) {
@@ -221,9 +221,9 @@ export function createShareService(options: ShareOptions = {}): ShareService {
 
   return {
     async create(request) {
-      const snapshot = verifiedSnapshot(request);
-      const json = snapshotJson(snapshot);
       const date = now();
+      const snapshot = verifiedSnapshot(request, date.toISOString());
+      const json = snapshotJson(snapshot);
       const token = randomBytes(24).toString("base64url");
       const expiresAt = Math.floor(date.valueOf() / 1000) + SHARE_LIFETIME_SECONDS;
       const hash = sha256Token(token);

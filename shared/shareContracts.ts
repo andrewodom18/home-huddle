@@ -31,6 +31,7 @@ export const shareSnapshotSchema = z.strictObject({
   plan: householdPlanSchema,
   date: dateSchema,
   timeZone: timeZoneSchema,
+  createdAt: z.iso.datetime().optional(),
 });
 
 export type ShareSnapshot = z.infer<typeof shareSnapshotSchema>;
