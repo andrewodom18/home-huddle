@@ -14,13 +14,14 @@ import type {
 } from "../shared/contracts";
 import { ChatApiError, sendChat } from "./api";
 import { AboutPage } from "./AboutPage";
+import { DraftReview } from "./DraftReview";
 import { EvidencePanel } from "./EvidencePanel";
 import { CalendarIcon, HomeIcon, InfoIcon, MicIcon, ResetIcon } from "./icons";
 import { PlanBoard } from "./PlanBoard";
 import { SharePanel } from "./SharePanel";
 import { SharedApp } from "./SharedApp";
 import { preservedFixedCommitments, reviewChanges } from "./planDiff";
-import { asksToMoveWholePlanDate, formatPlanDate, isValidPlanDate, isPastEventStart, pastPlanMoveIssue, planDates, requestedPlanDate, revisionTimeIssue, suggestedPlanDate, todayInZone } from "./planDate";
+import { asksToMoveWholePlanDate, formatPlanDate, isValidPlanDate, isPastEventStart, newPlanTimeIssue, pastPlanMoveIssue, planDates, requestedPlanDate, revisionTimeIssue, suggestedPlanDate, todayInZone } from "./planDate";
 import { scenarioRequirements } from "../shared/scenarios";
 import { isOutdatedExample } from "./planStatus";
 import { shareTokenFromHash } from "./shareApi";
@@ -115,6 +116,10 @@ function PlannerApp() {
   const [stored] = useState(loadState);
   const [messages, setMessages] = useState<ConversationMessage[]>(stored.messages);
   const [plan, setPlan] = useState<HouseholdPlan | undefined>(stored.plan);
+  const [draftPlan, setDraftPlan] = useState<HouseholdPlan | undefined>(stored.draftPlan);
+  const [draftSourceMessage, setDraftSourceMessage] = useState(stored.draftSourceMessage ?? "");
+  const [draftNeedsResolution, setDraftNeedsResolution] = useState(stored.draftNeedsResolution ?? false);
+  const [draftCorrectionStartId, setDraftCorrectionStartId] = useState(stored.draftCorrectionStartId);
   const [proposal, setProposal] = useState<HouseholdPlan | undefined>(stored.proposal);
   const [proposalDate, setProposalDate] = useState<string | undefined>(stored.proposalDate);
   const [undoPlan, setUndoPlan] = useState<HouseholdPlan | undefined>(stored.undoPlan);
@@ -139,6 +144,7 @@ function PlannerApp() {
   const scheduleEditNeedsFocus = useRef(false);
   const editErrorRef = useRef<HTMLDivElement>(null);
   const proposalRef = useRef<HTMLDivElement>(null);
+  const draftReviewRef = useRef<HTMLDivElement>(null);
   const isAboutPage = new URLSearchParams(window.location.search).get("page") === "about";
   const speech = useSpeechRecognition((transcript) => setInput(transcript));
 
@@ -151,7 +157,7 @@ function PlannerApp() {
     try {
       window.localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify({ messages: messages.slice(-13), plan, proposal, proposalDate, undoPlan, undoDate, scenarioId, calendarDate, timeZone, meta, failure } satisfies StoredState),
+        JSON.stringify({ messages: messages.slice(-13), plan, draftPlan, draftSourceMessage: draftPlan ? draftSourceMessage : undefined, draftNeedsResolution: draftPlan ? draftNeedsResolution : undefined, draftCorrectionStartId: draftPlan ? draftCorrectionStartId : undefined, proposal, proposalDate, undoPlan, undoDate, scenarioId, calendarDate, timeZone, meta, failure } satisfies StoredState),
       );
     } catch {
       queueMicrotask(() => {
@@ -161,11 +167,15 @@ function PlannerApp() {
       });
     }
     return () => { active = false; };
-  }, [messages, plan, proposal, proposalDate, undoPlan, undoDate, scenarioId, calendarDate, timeZone, meta, failure]);
+  }, [messages, plan, draftPlan, draftSourceMessage, draftNeedsResolution, draftCorrectionStartId, proposal, proposalDate, undoPlan, undoDate, scenarioId, calendarDate, timeZone, meta, failure]);
 
   useEffect(() => {
     if (proposal) proposalRef.current?.scrollIntoView?.({ behavior: scrollBehavior(), block: "center" });
   }, [proposal]);
+
+  useEffect(() => {
+    if (draftPlan && !pending) draftReviewRef.current?.focus();
+  }, [draftPlan, pending]);
 
   useEffect(() => {
     if (!scheduleEditNeedsFocus.current || pending) return;
@@ -190,14 +200,21 @@ function PlannerApp() {
         : "idle";
 
   function applyResponse(response: ChatResponse, request: ChatRequest) {
+    if (response.plan && !plan && !request.scenarioId && response.plan.requirements?.source !== "interpreted") {
+      throw new ChatApiError({ code: "INVALID_TOOL_OUTPUT", message: "The planning service did not return a reviewable checklist. Ask it to try again before using a plan.", retryable: true });
+    }
     setReviewError("");
     setDateChangeError("");
     setMessages((current) => [
       ...current,
-      { id: createId(), role: "assistant", text: plan && response.plan ? `Proposed revision: ${response.reply} Review the changes before applying.` : response.reply },
+      { id: createId(), role: "assistant", text: plan && response.plan
+        ? `Proposed revision: ${response.reply} Review the changes before applying.`
+        : response.plan && !request.scenarioId
+          ? `${response.reply} Review the captured requirements before using this draft.`
+          : response.reply },
     ]);
     if (response.plan) {
-      const acceptedDates = new Map(plan?.items.map((item) => [item.taskId ?? item.id, item.date]) ?? []);
+      const acceptedDates = new Map((plan ?? draftPlan)?.items.map((item) => [item.taskId ?? item.id, item.date]) ?? []);
       const datedPlan = {
         ...response.plan,
         items: response.plan.items.map((item) => ({
@@ -206,11 +223,21 @@ function PlannerApp() {
         })),
       };
       if (plan) { setProposal(datedPlan); setProposalDate(undefined); }
+      else if (!request.scenarioId) {
+        setDraftPlan(datedPlan);
+        setDraftSourceMessage((current) => draftPlan ? current : request.message);
+        setDraftNeedsResolution(false);
+        setDraftCorrectionStartId(undefined);
+        setCalendarDate(planDates(datedPlan, request.planDate ?? calendarDate)[0]);
+        setUndoPlan(undefined);
+      }
       else {
         setPlan(datedPlan);
         setCalendarDate(planDates(datedPlan, request.planDate ?? calendarDate)[0]);
         setUndoPlan(undefined);
       }
+    } else if (draftPlan && request.currentPlan) {
+      setDraftNeedsResolution(true);
     }
     setMeta(response.meta);
     setFailure(null);
@@ -229,6 +256,7 @@ function PlannerApp() {
       if (activeRequest === requestId.current) applyResponse(response, request);
     } catch (error) {
       if (activeRequest !== requestId.current || controller.signal.aborted) return;
+      if (draftPlan && request.currentPlan) setDraftNeedsResolution(true);
       const apiError =
         error instanceof ChatApiError
           ? error
@@ -301,10 +329,11 @@ function PlannerApp() {
   function submitMessage(value: string, selectedScenarioId?: ChatRequest["scenarioId"], edit?: ScheduleEdit) {
     const message = value.trim();
     if (!message || pending || proposal || message.length > 1000) return;
+    const activePlan = plan ?? draftPlan;
     speech.stop();
 
     // Exact, social-only messages need no model call or Bedrock quota reservation.
-    const localReply = selectedScenarioId ? undefined : localReplyFor(message, Boolean(plan));
+    const localReply = selectedScenarioId ? undefined : localReplyFor(message, Boolean(activePlan));
     if (localReply) {
       setMessages((current) => [
         ...current,
@@ -336,21 +365,26 @@ function PlannerApp() {
       }
     }
 
-    const mentionedDate = !plan && !selectedScenarioId ? suggestedPlanDate(message, new Date(), timeZone) : undefined;
+    const mentionedDate = !activePlan && !selectedScenarioId ? suggestedPlanDate(message, new Date(), timeZone) : undefined;
     const request: ChatRequest = {
       message,
       history: asHistory(messages),
-      currentPlan: plan,
+      currentPlan: activePlan,
       scenarioId: selectedScenarioId ?? scenarioId,
-      planDate: selectedScenarioId ? todayInZone(timeZone) : mentionedDate ?? (plan ? calendarDate : todayInZone(timeZone)),
+      planDate: selectedScenarioId ? todayInZone(timeZone) : mentionedDate ?? (activePlan ? calendarDate : todayInZone(timeZone)),
       timeZone,
       edit,
     };
     if (selectedScenarioId) setScenarioId(selectedScenarioId);
     if (mentionedDate) setCalendarDate(mentionedDate);
+    const userMessageId = createId();
+    if (draftPlan) {
+      if (!draftCorrectionStartId) setDraftCorrectionStartId(userMessageId);
+      setDraftNeedsResolution(true);
+    }
     setMessages((current) => [
       ...current,
-      { id: createId(), role: "user", text: message },
+      { id: userMessageId, role: "user", text: message },
     ]);
     setInput("");
     void execute(request);
@@ -372,6 +406,10 @@ function PlannerApp() {
     window.scrollTo({ top: 0, behavior: scrollBehavior() });
     setMessages([WELCOME_MESSAGE]);
     setPlan(undefined);
+    setDraftPlan(undefined);
+    setDraftSourceMessage("");
+    setDraftNeedsResolution(false);
+    setDraftCorrectionStartId(undefined);
     setProposal(undefined);
     setProposalDate(undefined);
     setUndoPlan(undefined);
@@ -392,10 +430,48 @@ function PlannerApp() {
   const revisionSuggestions = plan ? revisionPromptsFor(plan) : [];
   const examples = presetScenarios(todayInZone(timeZone));
   const conversationMessages = messages.filter(({ id }) => id !== "welcome");
-  const hasConversation = conversationMessages.length > 0 || Boolean(plan);
+  const hasConversation = conversationMessages.length > 0 || Boolean(plan || draftPlan);
   const changes = plan && proposal ? [...(proposalDate ? [{ id: "plan-date", label: "Plan date", before: formatPlanDate(planDates(plan, calendarDate)[0]), after: formatPlanDate(proposalDate) }] : []), ...reviewChanges(plan, proposal)] : [];
   const fixed = plan && proposal ? preservedFixedCommitments(plan, proposal) : [];
   const outdatedExample = plan ? isOutdatedExample(plan) : false;
+
+  function acceptDraft() {
+    if (!draftPlan || pending || draftNeedsResolution) return;
+    const timeIssue = newPlanTimeIssue(draftPlan, calendarDate, timeZone);
+    if (timeIssue) { setReviewError(timeIssue); return; }
+    setPlan(draftPlan);
+    setDraftPlan(undefined);
+    setDraftSourceMessage("");
+    setDraftCorrectionStartId(undefined);
+    setDraftNeedsResolution(false);
+    setReviewError("");
+    setFailure(null);
+    focusComposer.current = true;
+    setMessages((current) => [...current, { id: createId(), role: "assistant", text: "Plan accepted. You can now edit, share, or export it.", localOnly: true }]);
+  }
+
+  function returnToDraft() {
+    if (!draftPlan || pending) return;
+    setMessages((current) => {
+      const start = current.findIndex((entry) => entry.id === draftCorrectionStartId);
+      // Truncated saved history may no longer contain the correction's first
+      // message. In that case, omit all old chat from future model context;
+      // the pending draft itself remains the authoritative requirements.
+      return current.map((entry, index) => start < 0 || index >= start ? { ...entry, localOnly: true } : entry);
+    });
+    setDraftCorrectionStartId(undefined);
+    setDraftNeedsResolution(false);
+    setFailure(null);
+    setReviewError("");
+    setMessages((current) => [...current, { id: createId(), role: "assistant", text: "Returned to the previous draft. Review it before using it.", localOnly: true }]);
+    draftReviewRef.current?.focus();
+  }
+
+  function focusDraftCorrection() {
+    setInput("");
+    inputRef.current?.focus();
+    conversationRef.current?.scrollIntoView?.({ behavior: scrollBehavior(), block: "center" });
+  }
 
   function applyProposal() {
     if (!plan || !proposal) return;
@@ -608,7 +684,7 @@ function PlannerApp() {
               </span>
             </div>
             {errorBanner}
-            {reviewError && <p className="persistence-warning" role="alert">{reviewError}</p>}
+            {reviewError && !draftPlan && <p className="persistence-warning" role="alert">{reviewError}</p>}
             {storageWarning && <p className='persistence-warning' role='alert'>{storageWarning}</p>}
             {(pending || speech.listening) && (
               <p className='conversation-feedback' aria-hidden='true'>
@@ -663,6 +739,22 @@ function PlannerApp() {
                 suggestions={revisionSuggestions}
               />
             )}
+            {draftPlan && (
+              <DraftReview
+                date={calendarDate}
+                error={reviewError}
+                needsResolution={draftNeedsResolution}
+                onAccept={acceptDraft}
+                onCorrect={focusDraftCorrection}
+                onKeepDraft={returnToDraft}
+                onStartOver={reset}
+                pending={pending}
+                plan={draftPlan}
+                ref={draftReviewRef}
+                sourceMessage={draftSourceMessage}
+                timeZone={timeZone}
+              />
+            )}
             {plan && proposal && (
               <div className='proposal-wrap' role='region' aria-label='Proposed revision' ref={proposalRef} tabIndex={-1}>
                 <ChangeReviewCard
@@ -686,8 +778,20 @@ function PlannerApp() {
                 </a>
               )}
             </div>
-            {hasConversation && meta && !plan && <EvidencePanel meta={meta} />}
+            {hasConversation && meta && !plan && !draftPlan && <EvidencePanel meta={meta} />}
           </section>
+
+          {draftPlan && (
+            <section aria-label='Draft calendar preview' className='calendar-section draft-calendar' id='draft-calendar'>
+              <div className='calendar-section__heading'>
+                <span className='section-kicker'>Preview</span>
+                <h2>Draft calendar</h2>
+                <p>Review the captured requirements above before using this schedule. Activities cannot be edited or shared until then.</p>
+              </div>
+              <PlanBoard date={calendarDate} draftPreview plan={draftPlan} timeZone={timeZone} />
+              {meta && <EvidencePanel meta={meta} />}
+            </section>
+          )}
 
           {plan && (
             <section
@@ -701,6 +805,7 @@ function PlannerApp() {
                 <p>
                   Open an activity to adjust its date, time, or people.
                 </p>
+                {plan.requirements?.source === "scenario" && <p className='verified-banner'>This example was checked against its preset requirements. Open the verified checklist below to review them.</p>}
               </div>
               <PlanBoard date={calendarDate} dateChangeDisabled={Boolean(proposal || pending)} dateError={dateChangeError} onDateChange={(value) => proposePlanDate(value)} onCorrectRequirement={proposal || pending ? undefined : correctRequirement} onDetailsChange={updateEventDetails} onScheduleChange={proposal || pending ? undefined : requestScheduleEdit} persistenceUnavailable={storageUnavailable} plan={plan} timeZone={timeZone} />
               {!outdatedExample && <SharePanel

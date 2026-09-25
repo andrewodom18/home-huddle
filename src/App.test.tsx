@@ -45,6 +45,21 @@ const success: ChatResponse = {
   },
 };
 
+const customPlan: HouseholdPlan = {
+  ...plan,
+  title: "Tuesday dinner",
+  participants: ["Maya", "Leo"],
+  items: [{ id: "dinner-event", taskId: "dinner", date: "2026-09-22", startTime: "6:00 PM", durationMinutes: 30, task: "Prepare dinner", assignee: "Maya" }],
+  requirements: {
+    source: "interpreted",
+    timeWindow: { startTime: "5:00 PM", endTime: "8:00 PM" },
+    tasks: [{ id: "dinner", date: "2026-09-22", label: "Prepare dinner", durationMinutes: 30, requiredParticipants: ["Maya"] }],
+    assumptions: ["Ingredients are available."],
+  },
+};
+
+const customSuccess: ChatResponse = { ...success, plan: customPlan };
+
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -53,6 +68,95 @@ function jsonResponse(body: unknown, status = 200) {
 }
 
 describe("Home Huddle", () => {
+  it("keeps a custom first plan as a reviewable draft until explicit acceptance", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(customSuccess)));
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.type(screen.getByRole("textbox", { name: "Message" }), "Plan dinner for Maya on September 22{Enter}");
+    const review = await screen.findByRole("region", { name: "Review draft plan" });
+    expect(review).toHaveFocus();
+    expect(within(review).getByText("Plan dinner for Maya on September 22")).toBeInTheDocument();
+    expect(within(review).getByText(/Ingredients are available/)).toBeVisible();
+    expect(screen.getByRole("region", { name: "Draft calendar preview" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Household calendar" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Share or export this plan")).not.toBeInTheDocument();
+    expect(JSON.parse(window.localStorage.getItem("home-huddle-state-v2") ?? "{}").plan).toBeUndefined();
+
+    await user.click(within(review).getByRole("button", { name: "Use this plan" }));
+    expect(screen.getByRole("region", { name: "Household calendar" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Review draft plan" })).not.toBeInTheDocument();
+    expect(screen.getByText("Share or export this plan")).toBeInTheDocument();
+    expect(JSON.parse(window.localStorage.getItem("home-huddle-state-v2") ?? "{}").plan.title).toBe("Tuesday dinner");
+  });
+
+  it("corrects a missing activity against the pending draft and reviews the replacement", async () => {
+    const corrected: HouseholdPlan = {
+      ...customPlan, version: 2,
+      items: [...customPlan.items, { id: "pickup-event", taskId: "pickup", date: "2026-09-22", startTime: "5:00 PM", durationMinutes: 20, task: "School pickup", assignee: "Leo" }],
+      requirements: { ...customPlan.requirements!, tasks: [...customPlan.requirements!.tasks, { id: "pickup", date: "2026-09-22", label: "School pickup", durationMinutes: 20, requiredParticipants: ["Leo"] }] },
+    };
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      const request = JSON.parse(String(init?.body));
+      return jsonResponse(request.currentPlan ? { ...customSuccess, plan: corrected } : customSuccess);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.type(screen.getByRole("textbox", { name: "Message" }), "Plan dinner for Maya on September 22{Enter}");
+    const first = await screen.findByRole("region", { name: "Review draft plan" });
+    await user.click(within(first).getByRole("button", { name: "Add or correct a requirement" }));
+    await user.type(screen.getByRole("textbox", { name: "Message" }), "Add a 20-minute school pickup for Leo at 5 PM{Enter}");
+    await waitFor(() => expect(within(screen.getByRole("region", { name: "Review draft plan" })).getByText(/School pickup/)).toBeInTheDocument());
+    expect(JSON.parse(String(fetchMock.mock.calls[1][1]?.body)).currentPlan.title).toBe("Tuesday dinner");
+    expect(screen.queryByText("Share or export this plan")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Use this plan" }));
+    expect(screen.getByRole("region", { name: "Household calendar" })).toHaveTextContent("School pickup");
+  });
+
+  it("blocks an unresolved correction and lets the user return explicitly to the earlier draft", async () => {
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      const request = JSON.parse(String(init?.body));
+      return jsonResponse(request.currentPlan ? { ...customSuccess, plan: undefined, outcome: "clarification", reply: "Which pickup time?" } : customSuccess);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.type(screen.getByRole("textbox", { name: "Message" }), "Plan dinner for Maya on September 22{Enter}");
+    await screen.findByRole("region", { name: "Review draft plan" });
+    await user.type(screen.getByRole("textbox", { name: "Message" }), "Add a school pickup{Enter}");
+    await screen.findByText("Which pickup time?");
+    expect(screen.getByRole("button", { name: "Use this plan" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Return to previous draft" }));
+    expect(screen.getByRole("button", { name: "Use this plan" })).toBeEnabled();
+    await user.type(screen.getByRole("textbox", { name: "Message" }), "Add a 20-minute school pickup for Leo at 5 PM{Enter}");
+    const nextRequest = JSON.parse(String(fetchMock.mock.calls[2][1]?.body));
+    expect(nextRequest.history.map((entry: { text: string }) => entry.text)).not.toContain("Add a school pickup");
+  });
+
+  it("rejects a custom first plan without an interpreted checklist", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(success)));
+    const user = userEvent.setup();
+    render(<App />);
+    await user.type(screen.getByRole("textbox", { name: "Message" }), "Plan dinner for Maya on September 22{Enter}");
+    expect(await screen.findByText(/did not return a reviewable checklist/)).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Household calendar" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Review draft plan" })).not.toBeInTheDocument();
+  });
+
+  it("does not accept a draft after its scheduled activity has elapsed", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(customSuccess)));
+    const user = userEvent.setup();
+    render(<App />);
+    await user.type(screen.getByRole("textbox", { name: "Message" }), "Plan dinner for Maya on September 22{Enter}");
+    await screen.findByRole("region", { name: "Review draft plan" });
+    vi.setSystemTime(new Date("2026-09-23T00:00:00Z"));
+    await user.click(screen.getByRole("button", { name: "Use this plan" }));
+    expect(screen.getByRole("region", { name: "Review draft plan" })).toHaveTextContent("starts in the past");
+    expect(screen.queryByRole("region", { name: "Household calendar" })).not.toBeInTheDocument();
+  });
   it("shows a reliable text experience when voice input is unavailable", () => {
     const { container } = render(<App />);
 

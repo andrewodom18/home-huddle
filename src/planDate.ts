@@ -66,6 +66,19 @@ export function pastPlanMoveIssue(plan: HouseholdPlan, date: string, timeZone: s
     : undefined;
 }
 
+/** A draft may become stale while the user is reviewing its requirements. */
+export function newPlanTimeIssue(plan: HouseholdPlan, fallback: string, timeZone: string, now = new Date()): string | undefined {
+  for (const item of plan.items) {
+    const date = item.date ?? fallback;
+    const timeIssue = localEventTimeIssue(date, item.startTime, item.durationMinutes, timeZone);
+    if (timeIssue) return `“${item.task}”: ${timeIssue}`;
+    if (isPastEventStart(date, item.startTime, timeZone, now)) {
+      return `“${item.task}” starts in the past in ${timeZone}. Ask for a new draft with future times.`;
+    }
+  }
+  return undefined;
+}
+
 export function planDates(plan: HouseholdPlan, fallback: string): string[] {
   return [...new Set(plan.items.map((item) => item.date && isValidPlanDate(item.date) ? item.date : fallback))].sort();
 }

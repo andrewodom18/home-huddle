@@ -14,6 +14,7 @@ type PlanBoardProps = {
   timeZone?: string;
   dateError?: string;
   readOnly?: boolean;
+  draftPreview?: boolean;
   persistenceUnavailable?: boolean;
   onDateChange?: (date: string) => void;
   dateChangeDisabled?: boolean;
@@ -87,7 +88,8 @@ function shortDate(value: string): string {
   return value ? new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", weekday: "short", timeZone: "UTC" }).format(new Date(`${value}T12:00:00Z`)) : "Date not set";
 }
 
-export function PlanBoard({ plan, date, timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC", dateError, readOnly = false, persistenceUnavailable = false, onDateChange, dateChangeDisabled = false, onCorrectRequirement, onDetailsChange, onScheduleChange }: PlanBoardProps) {
+export function PlanBoard({ plan, date, timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC", dateError, readOnly = false, draftPreview = false, persistenceUnavailable = false, onDateChange, dateChangeDisabled = false, onCorrectRequirement, onDetailsChange, onScheduleChange }: PlanBoardProps) {
+  const viewOnly = readOnly || draftPreview;
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [draftDetails, setDraftDetails] = useState("");
   const [draftStart, setDraftStart] = useState("");
@@ -113,8 +115,8 @@ export function PlanBoard({ plan, date, timeZone = Intl.DateTimeFormat().resolve
   const canonicalRequirement = scenarioRequirements(plan.scenarioId, plan.scenarioAnchor)?.tasks.find((task) => task.id === selectedItem?.taskId);
   const fixedCommitment = Boolean(canonicalRequirement?.fixedDate || canonicalRequirement?.fixedStartTime);
   const startedCommitment = selectedItem ? isPastEventStart(effectiveDate(selectedItem, date), selectedItem.startTime, timeZone) : false;
-  const canEditDetails = !readOnly && Boolean(onDetailsChange);
-  const canEditSchedule = !readOnly && !startedCommitment && !fixedCommitment && Boolean(onScheduleChange) && Boolean(selectedItem?.taskId && plan.requirements) && !isOutdatedExample(plan);
+  const canEditDetails = !viewOnly && Boolean(onDetailsChange);
+  const canEditSchedule = !viewOnly && !startedCommitment && !fixedCommitment && Boolean(onScheduleChange) && Boolean(selectedItem?.taskId && plan.requirements) && !isOutdatedExample(plan);
   const participantColors = getParticipantColors(plan.participants);
   const dates = [...new Set(plan.items.map((item) => effectiveDate(item, date)))].sort((first, second) => first === "" ? 1 : second === "" ? -1 : first.localeCompare(second));
   const activeDate = selectedDate !== null && dates.includes(selectedDate) ? selectedDate : dates[0] ?? "";
@@ -256,10 +258,10 @@ export function PlanBoard({ plan, date, timeZone = Intl.DateTimeFormat().resolve
           This example was made before the current schedule checks. {readOnly ? "Treat this snapshot as an earlier draft." : "Start a new plan to regenerate it before sharing."}
         </p>
       )}
-      {(dateSummary || (!readOnly && onDateChange && !multipleDates)) && (
+      {(dateSummary || (!viewOnly && onDateChange && !multipleDates)) && (
         <div className="plan-board__date-row">
           <p className="plan-board__date">{dateSummary ?? "Choose a plan date"}</p>
-          {!readOnly && onDateChange && !multipleDates && (
+          {!viewOnly && onDateChange && !multipleDates && (
             <label className="plan-board__date-control">
               <span>Change date</span>
               <input aria-label="Plan date" disabled={dateChangeDisabled} min={todayInZone(timeZone)} onChange={(event) => {
@@ -441,7 +443,8 @@ export function PlanBoard({ plan, date, timeZone = Intl.DateTimeFormat().resolve
               <div className="event-details__actions"><button onClick={reviewScheduleChange} type="button">Review schedule change</button></div>
             </div>
           )}
-          {!readOnly && !canEditSchedule && <p className="event-details__edit-hint">{startedCommitment ? "This activity has already started. Keep its recorded date, time, duration, and people; you can still update its details." : fixedCommitment ? "This is a fixed commitment in the example. Its date, time, duration, and people stay as stated; start a new plan to change the commitment itself." : "Start a new plan to edit this schedule."}</p>}
+          {!viewOnly && !canEditSchedule && <p className="event-details__edit-hint">{startedCommitment ? "This activity has already started. Keep its recorded date, time, duration, and people; you can still update its details." : fixedCommitment ? "This is a fixed commitment in the example. Its date, time, duration, and people stay as stated; start a new plan to change the commitment itself." : "Start a new plan to edit this schedule."}</p>}
+          {draftPreview && <p className="event-details__edit-hint">This is a draft preview. Correct its requirements before using the plan, or accept it to edit activities.</p>}
           {canEditDetails ? (
             <div className="event-details__note">
               <label htmlFor="event-details-note">Additional details</label>
@@ -458,7 +461,7 @@ export function PlanBoard({ plan, date, timeZone = Intl.DateTimeFormat().resolve
         </dialog>
       )}
 
-      {plan.requirements && (
+      {plan.requirements && !draftPreview && (
         <details className="plan-checklist">
           <summary>{outdated ? "Earlier example checklist — regenerate" : plan.scenarioEdits && Object.keys(plan.scenarioEdits).length ? "Customized example checklist" : plan.requirements.source === "scenario" ? "Verified example checklist" : "Interpreted checklist — review it"}</summary>
           <p>
@@ -495,9 +498,9 @@ export function PlanBoard({ plan, date, timeZone = Intl.DateTimeFormat().resolve
 
       <footer className="plan-board__footer">
         <span>Updated {formatUpdatedAt(plan.updatedAt)}</span>
-        <span>{readOnly ? "Read-only snapshot" : persistenceUnavailable ? "In memory for this visit" : "Saved on this device"}</span>
+        <span>{draftPreview ? "Draft — not yet accepted" : readOnly ? "Read-only snapshot" : persistenceUnavailable ? "In memory for this visit" : "Saved on this device"}</span>
       </footer>
-      {!readOnly && <a className="plan-board__continue" href="#conversation">Back to the conversation ↑</a>}
+      {!viewOnly && <a className="plan-board__continue" href="#conversation">Back to the conversation ↑</a>}
     </section>
   );
 }

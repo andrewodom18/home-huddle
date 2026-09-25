@@ -70,6 +70,11 @@ export function fixtureResponse(plan: HouseholdPlan, reply = "Here's a checked p
   return { reply, plan, meta: { provider: "Amazon Bedrock", modelId: "fixture", toolUsed: true, latencyMs: 10 } };
 }
 
+export function fixtureCustomPlan(scenario: Scenario, anchorDate?: string): HouseholdPlan {
+  const plan = fixturePlan(scenario, anchorDate);
+  return { ...plan, scenarioId: undefined, scenarioAnchor: undefined, requirements: { ...plan.requirements!, source: "interpreted" } };
+}
+
 export function validateFixture(plan: HouseholdPlan): void {
   householdPlanSchema.parse(plan);
   const issues = scheduleIssues(plan, { history: [], message: "", planDate: plan.items[0].date });

@@ -10,6 +10,10 @@ export type FailedRequest = { request: ChatRequest; message: string; retryable: 
 export type StoredState = {
   messages: ConversationMessage[];
   plan?: HouseholdPlan;
+  draftPlan?: HouseholdPlan;
+  draftSourceMessage?: string;
+  draftNeedsResolution?: boolean;
+  draftCorrectionStartId?: string;
   proposal?: HouseholdPlan;
   proposalDate?: string;
   undoPlan?: HouseholdPlan;
@@ -61,6 +65,13 @@ export function loadState(): StoredState & { warning?: string } {
     return parsed && { ...parsed, items: parsed.items.map((item) => ({ ...item, date: item.date ?? fallback })) };
   };
   const plan = migrate(stored.plan, savedDate);
+  const possibleDraft = migrate(stored.draftPlan, savedDate);
+  const draftSourceMessage = optional(stored.draftSourceMessage, z.string().trim().min(1).max(1000));
+  const draftNeedsResolution = optional(stored.draftNeedsResolution, z.boolean()) ?? false;
+  const draftCorrectionStartId = optional(stored.draftCorrectionStartId, z.string().min(1).max(120));
+  const draftPlan = !plan && possibleDraft?.requirements?.source === "interpreted" && draftSourceMessage
+    ? possibleDraft : undefined;
+  if (possibleDraft && !draftPlan || draftSourceMessage && !draftPlan) recovered = true;
   const proposal = migrate(stored.proposal, proposalDate ?? savedDate);
   const undoPlan = migrate(stored.undoPlan, undoDate ?? savedDate);
   const timeZone = optional(stored.timeZone, zoneSchema);
@@ -69,7 +80,10 @@ export function loadState(): StoredState & { warning?: string } {
   const scenarioId = optional(stored.scenarioId, chatRequestSchema.shape.scenarioId);
   if (!plan && (proposal || undoPlan)) recovered = true;
   return {
-    messages: messages.length ? messages : [WELCOME_MESSAGE], plan,
+    messages: messages.length ? messages : [WELCOME_MESSAGE], plan, draftPlan,
+    draftSourceMessage: draftPlan ? draftSourceMessage : undefined,
+    draftNeedsResolution: draftPlan && draftNeedsResolution,
+    draftCorrectionStartId: draftPlan ? draftCorrectionStartId : undefined,
     proposal: plan ? proposal : undefined, proposalDate: plan && proposal ? proposalDate : undefined,
     undoPlan: plan ? undoPlan : undefined, undoDate: plan && undoPlan ? undoDate : undefined,
     calendarDate: plan && savedDate ? planDates(plan, savedDate)[0] : savedDate,

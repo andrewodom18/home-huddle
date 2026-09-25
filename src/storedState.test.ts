@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { loadState, STORAGE_KEY } from "./storedState";
+import { fixturePlan } from "../e2e/fixtures";
 
 const validMessage = { id: "one", role: "user", text: "My plan" };
 describe("saved conversation recovery", () => {
@@ -21,5 +22,24 @@ describe("saved conversation recovery", () => {
   it("explains corrupt saved JSON", () => {
     window.localStorage.setItem(STORAGE_KEY, "{broken");
     expect(loadState().warning).toContain("could not be read");
+  });
+  it("restores a pending interpreted draft separately from an accepted plan", () => {
+    const draft = fixturePlan("chores");
+    delete draft.scenarioId;
+    draft.requirements!.source = "interpreted";
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ messages: [validMessage], draftPlan: draft, draftSourceMessage: "Plan chores", draftNeedsResolution: true }));
+    const result = loadState();
+    expect(result.plan).toBeUndefined();
+    expect(result.draftPlan?.title).toBe(draft.title);
+    expect(result.draftSourceMessage).toBe("Plan chores");
+    expect(result.draftNeedsResolution).toBe(true);
+  });
+  it("discards an incomplete pending draft without accepting it", () => {
+    const draft = fixturePlan("chores");
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ messages: [validMessage], draftPlan: draft, draftSourceMessage: "Plan chores" }));
+    const result = loadState();
+    expect(result.plan).toBeUndefined();
+    expect(result.draftPlan).toBeUndefined();
+    expect(result.warning).toContain("invalid");
   });
 });

@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page, type Route } from "@playwright/test";
-import { fixturePlan, fixtureResponse, validateFixture } from "./fixtures";
+import { fixtureCustomPlan, fixturePlan, fixtureResponse, validateFixture } from "./fixtures";
 import { presetScenarios } from "../src/presets";
 import type { ChatRequest, HouseholdPlan } from "../shared/contracts";
 
@@ -95,7 +95,7 @@ test("examples dismiss, Thinking is announced, API failure retries", async ({ pa
     if (calls === 1) {
       await pending;
       await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: { code: "BEDROCK_UNAVAILABLE", message: "Try again soon.", retryable: true } }) });
-    } else await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(fixtureResponse(fixturePlan("chores"))) });
+    } else await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(fixtureResponse(fixtureCustomPlan("chores"))) });
   });
   await cleanOpen(page);
   await page.getByRole("button", { name: "Dismiss example scenarios" }).click();
@@ -107,6 +107,9 @@ test("examples dismiss, Thinking is announced, API failure retries", async ({ pa
   await expect(page.getByRole("alert")).toContainText("Try again soon.");
   await expect(page.getByRole("region", { name: "Household calendar" })).toHaveCount(0);
   await page.getByRole("button", { name: "Retry" }).click();
+  await expect(page.getByRole("region", { name: "Review draft plan" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Household calendar" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Use this plan" }).click();
   await expect(page.getByRole("region", { name: "Household calendar" })).toBeVisible();
   expect(calls).toBe(2);
 });

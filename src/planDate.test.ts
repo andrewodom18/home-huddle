@@ -1,6 +1,6 @@
 import type { HouseholdPlan } from "../shared/contracts";
 import { describe, expect, it } from "vitest";
-import { asksToMoveDate, asksToMoveWholePlanDate, isPastEventStart, isValidPlanDate, pastPlanMoveIssue, planDates, requestedPlanDate, revisionTimeIssue, suggestedPlanDate, todayInZone } from "./planDate";
+import { asksToMoveDate, asksToMoveWholePlanDate, isPastEventStart, isValidPlanDate, newPlanTimeIssue, pastPlanMoveIssue, planDates, requestedPlanDate, revisionTimeIssue, suggestedPlanDate, todayInZone } from "./planDate";
 
 describe("past schedule checks", () => {
   const now = new Date("2026-09-18T15:00:00Z"); // 10:00 AM in Chicago.
@@ -17,6 +17,14 @@ describe("past schedule checks", () => {
     const plan = { items: [{ task: "Clean the kitchen", startTime: "9:00 AM", durationMinutes: 30 }] } as Parameters<typeof pastPlanMoveIssue>[0];
     expect(pastPlanMoveIssue(plan, "2026-09-18", "America/Chicago", now)).toContain("Clean the kitchen");
     expect(pastPlanMoveIssue(plan, "2026-09-19", "America/Chicago", now)).toBeUndefined();
+  });
+  it("rechecks each draft activity when acceptance happens after its start", () => {
+    const plan = { items: [
+      { task: "Dinner", date: "2026-09-18", startTime: "9:59 AM", durationMinutes: 30 },
+      { task: "Pickup", date: "2026-09-19", startTime: "11:00 AM", durationMinutes: 20 },
+    ] } as HouseholdPlan;
+    expect(newPlanTimeIssue(plan, "2026-09-18", "America/Chicago", now)).toContain("Dinner");
+    expect(newPlanTimeIssue(plan, "2026-09-18", "America/Los_Angeles", now)).toBeUndefined();
   });
 
   it.each([

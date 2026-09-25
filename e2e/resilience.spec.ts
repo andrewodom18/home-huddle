@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { fixturePlan, fixtureResponse } from "./fixtures";
+import { fixtureCustomPlan, fixturePlan, fixtureResponse } from "./fixtures";
 import type { HouseholdPlan } from "../shared/contracts";
 
 const storageKey = "home-huddle-state-v2";
@@ -80,7 +80,7 @@ test("network failure retries the same request and quota exhaustion remains unde
     messages.push(route.request().postDataJSON().message);
     if (calls === 1) await route.abort("failed");
     else if (calls === 2) await route.fulfill({ status: 429, contentType: "application/json", body: JSON.stringify({ error: { code: "RATE_LIMIT", message: "The demo call allowance is used. Try again tomorrow.", retryable: true } }) });
-    else await route.fulfill({ contentType: "application/json", body: JSON.stringify(fixtureResponse(fixturePlan("chores"))) });
+    else await route.fulfill({ contentType: "application/json", body: JSON.stringify(fixtureResponse(fixtureCustomPlan("chores"))) });
   });
   await page.goto("/");
   await composer(page).fill("Plan household chores for tomorrow.");
@@ -90,6 +90,9 @@ test("network failure retries the same request and quota exhaustion remains unde
   await expect(page.getByRole("alert")).toContainText("allowance");
   await noAccessibilityViolations(page);
   await page.getByRole("button", { name: "Retry" }).click();
+  await expect(page.getByRole("region", { name: "Review draft plan" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Household calendar" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Use this plan" }).click();
   await expect(page.getByRole("region", { name: "Household calendar" })).toBeVisible();
   expect(messages).toEqual(Array(3).fill("Plan household chores for tomorrow."));
 });
@@ -130,6 +133,77 @@ test("long multiline custom prompts are preserved and clarification remains edit
   await expect(page.getByRole("article", { name: "assistant message" }).last()).toHaveText(/Which day should I plan/);
   expect(sent).toEqual([prompt]);
   await expect(composer(page)).toBeEnabled();
+  await expect(page.getByRole("region", { name: "Household calendar" })).toHaveCount(0);
+});
+
+test("a custom draft exposes captured needs before acceptance and survives a correction and reload", async ({ page }, testInfo) => {
+  const draft = fixturePlan("chores");
+  delete draft.scenarioId;
+  delete draft.scenarioAnchor;
+  draft.requirements!.source = "interpreted";
+  draft.requirements!.assumptions = ["Cleaning supplies are available."];
+  const revised: HouseholdPlan = structuredClone(draft);
+  revised.version += 1;
+  revised.items.push({ id: "event-water", taskId: "water", date: draft.items[0].date, startTime: "10:00 AM", durationMinutes: 10, task: "Water plants", assignee: "Alex" });
+  revised.requirements!.tasks.push({ id: "water", date: draft.items[0].date, label: "Water plants", durationMinutes: 10, requiredParticipants: ["Alex"] });
+  const requests: Array<{ currentPlan?: HouseholdPlan }> = [];
+  await page.route("**/api/chat", async (route) => {
+    const request = route.request().postDataJSON() as { currentPlan?: HouseholdPlan };
+    requests.push(request);
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify(fixtureResponse(request.currentPlan ? revised : draft)) });
+  });
+  await page.goto("/");
+  await composer(page).fill("Plan Saturday chores for Alex, Sam, and Riley");
+  await composer(page).press("Enter");
+  const review = page.getByRole("region", { name: "Review draft plan" });
+  await expect(review).toBeVisible();
+  await expect(review).toBeFocused();
+  await expect(review.getByText("Cleaning supplies are available.")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Draft calendar preview" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Household calendar" })).toHaveCount(0);
+  await expect(page.getByText("Share or export this plan")).toHaveCount(0);
+  await page.screenshot({ path: testInfo.outputPath("draft-review.png"), fullPage: true });
+  await noAccessibilityViolations(page);
+  await page.reload();
+  await expect(review).toBeVisible();
+  await review.getByRole("button", { name: "Add or correct a requirement" }).click();
+  await composer(page).fill("Add a 10-minute Water plants task for Alex at 10 AM");
+  await composer(page).press("Enter");
+  await expect(review.getByText(/Water plants/)).toBeVisible();
+  expect(requests[1].currentPlan?.title).toBe(draft.title);
+  await expect(page.getByText("Share or export this plan")).toHaveCount(0);
+  await review.getByRole("button", { name: "Use this plan" }).click();
+  await expect(page.getByRole("region", { name: "Household calendar" })).toContainText("Water plants");
+  await expect(page.getByText("Share or export this plan")).toBeVisible();
+});
+
+test("reloading during a draft correction cannot accept the older draft silently", async ({ page }) => {
+  let release!: () => void;
+  const pending = new Promise<void>((resolve) => { release = resolve; });
+  let calls = 0;
+  await page.route("**/api/chat", async (route) => {
+    calls += 1;
+    if (calls === 1) {
+      await route.fulfill({ contentType: "application/json", body: JSON.stringify(fixtureResponse(fixtureCustomPlan("chores"))) });
+    } else {
+      await pending;
+      await route.abort().catch(() => undefined);
+    }
+  });
+  await page.goto("/");
+  await composer(page).fill("Plan Saturday chores for Alex, Sam, and Riley");
+  await composer(page).press("Enter");
+  const review = page.getByRole("region", { name: "Review draft plan" });
+  await expect(review).toBeVisible();
+  await composer(page).fill("Add a school pickup at 3 PM");
+  await composer(page).press("Enter");
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("home-huddle-state-v2") ?? "{}").draftNeedsResolution)).toBe(true);
+  await page.reload();
+  release();
+  await expect(review.getByRole("button", { name: "Use this plan" })).toBeDisabled();
+  await expect(review.getByRole("button", { name: "Return to previous draft" })).toBeVisible();
+  await review.getByRole("button", { name: "Return to previous draft" }).click();
+  await expect(review.getByRole("button", { name: "Use this plan" })).toBeEnabled();
   await expect(page.getByRole("region", { name: "Household calendar" })).toHaveCount(0);
 });
 
