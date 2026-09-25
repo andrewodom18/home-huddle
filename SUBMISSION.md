@@ -5,6 +5,9 @@ work. Source commits and public deployments have separate version histories.
 Historical deployment checks below apply only to the earlier public version; current quality
 evidence belongs in
 `docs/implementation-validation.md` and `output/live-corpus-v2/report.md`.
+The September 25 page and API deployment of source commit `a33a158` has a separate
+record in `docs/deployment-validation.md`; its smoke checks do not satisfy the
+unrun same-source planning-quality gate.
 
 **September 23 status:** the three previously failing live cases now pass on the
 fixed source: a 20-task plan, an add-activity revision, and conflicting fixed
@@ -305,8 +308,8 @@ quality evidence even if they are submitted as development friction.
 - [ ] Five independent usability sessions completed on named candidate versions;
       at least four of five complete the custom plan and revision unassisted,
       or shortfalls and retests are reported without claiming the target.
-- [ ] Matching frontend and API build identifiers recorded for the public
-      candidate; deployment smoke checks observed on that version.
+- [x] Matching frontend and API build identifiers recorded for the public
+      candidate; narrow deployment smoke checks observed on that version.
 - [ ] Public demonstration video recorded and linked.
 
 ## Historical deployed baseline verification

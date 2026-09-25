@@ -8,7 +8,8 @@ assignable schedule and supports conversational revisions.
 
 The features below describe the source candidate. The public page and API are
 deployed separately; check their deployment records before treating the live
-demo as the same version.
+demo as the same version. The latest paired deployment is recorded in
+[`docs/deployment-validation.md`](docs/deployment-validation.md).
 
 Conversation state stays in the browser. The Node API does not persist prompts;
 it sends model-bound planning requests to Amazon Bedrock. The public page runs on
