@@ -19,6 +19,7 @@ type AppOptions = {
   hourlyChatLimit?: number;
   publicOrigin?: string;
   now?: () => number;
+  candidateIdentity?: { sourceFingerprint: string; modelId: string; region: string; instanceId: string };
 };
 
 export function createApp(options: AppOptions = {}) {
@@ -70,9 +71,11 @@ export function createApp(options: AppOptions = {}) {
   }
 
   app.get("/api/health", (_request, response) => {
+    response.set("Cache-Control", "no-store");
     response.json({
       status: "ok",
       plannerVersion: 2,
+      ...(options.candidateIdentity ?? {}),
       capabilities: ["interpreted-requirements", "typed-revisions", "availability", "resource-capacity"],
       bedrockConfigured:
         options.bedrockConfigured ??

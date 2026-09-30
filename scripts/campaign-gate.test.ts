@@ -20,6 +20,12 @@ describe("live release gate", () => {
     expect(result.publishedViolations).toBe(1);
     expect(result.gate).toBe(false);
   });
+  it("never erases a plan published for a required clarification", () => {
+    const observations = [{ ...pass("missing-information"), outcome: "fail" as const, hardIssues: ["published-plan-for-clarification-or-conflict"] }, ...passing()];
+    const result = evaluateCampaign(corpus, observations, "current");
+    expect(result.publishedViolations).toBe(1);
+    expect(result.gate).toBe(false);
+  });
   it("counts failed feasible attempts even after every latest case passes", () => {
     const observations = [0, 1].map(() => ({ ...pass("free-parallel"), outcome: "fail" as const }));
     const result = evaluateCampaign(corpus, [...observations, ...passing()], "current");

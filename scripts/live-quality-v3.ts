@@ -1,7 +1,5 @@
 /** Separate, opt-in v3 quality campaign. Never writes prompts or response bodies. */
-import { createHash } from "node:crypto";
 import { mkdir, open, readFile, readdir, unlink, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { performance } from "node:perf_hooks";
 import { chatResponseSchema, type ChatErrorResponse } from "../shared/contracts";
 import { scheduleIssues } from "../server/scheduleValidation";
@@ -9,23 +7,13 @@ import { pastScheduleIssues } from "../server/pastSchedule";
 import { assessPlan, buildCorpus } from "./planning-corpus";
 import { V3_CALL_CAP, readV3Ledger, reserveV3, settleV3, v3Spent } from "./campaign-budget-v3";
 import { evaluateCampaign } from "./campaign-gate";
+import { assertLocalCandidate, verifyCandidateAfterResponse } from "./campaignPreflight";
+import { sourceFingerprint } from "../server/sourceFingerprint";
 
 const output = "output/live-corpus-v3";
 const endpoint = "http://127.0.0.1:8787/api/chat";
 const criticalCases = ["free-parallel", "free-cross-month", "revision-exact-start", "revision-assignee"];
 type Result = { attempt: string; id: string; sourceFingerprint: string; outcome: "pass" | "fail" | "blocked"; status?: number; code?: string; calls: number | "unknown"; latencyMs: number; coverage?: number; hardIssues: string[]; qualityIssues: string[]; changedExistingActivities?: number };
-
-async function sourceFingerprint(): Promise<string> {
-  const hash = createHash("sha256");
-  for (const dir of ["server", "shared", "scripts"]) {
-    const files = (await readdir(dir)).filter((name) => name.endsWith(".ts") && !name.endsWith(".test.ts")).sort();
-    for (const filename of files) hash.update(`${dir}/${filename}\n`).update(await readFile(path.join(dir, filename)));
-  }
-  for (const filename of ["src/presets.ts", "package.json", "package-lock.json"]) {
-    hash.update(`${filename}\n`).update(await readFile(filename));
-  }
-  return hash.digest("hex").slice(0, 16);
-}
 
 async function main() {
   if (process.env.HOME_HUDDLE_LIVE_QUALITY !== "1" || process.env.HOME_HUDDLE_V3_AUTHORIZED !== "150") {
@@ -40,10 +28,8 @@ async function main() {
   process.on("SIGTERM", stop);
   process.on("SIGINT", stop);
   try {
-    const health = await fetch("http://127.0.0.1:8787/api/health", { signal: AbortSignal.timeout(5000) });
-    const state = await health.json() as { bedrockConfigured?: boolean; plannerVersion?: number };
-    if (!health.ok || !state.bedrockConfigured || state.plannerVersion !== 2) throw new Error("Current planner-v2 API with Bedrock authentication is not ready; no model requests sent.");
     const fingerprint = await sourceFingerprint();
+    const instanceId = await assertLocalCandidate(fingerprint);
     const ledgerPath = `${output}/campaign-ledger.json`;
     const existing = await readdir(output);
     if (!existing.includes("campaign-ledger.json") && existing.some((name) => /^results-.*\.json$/.test(name) || name === "report.md")) {
@@ -71,6 +57,7 @@ async function main() {
     const results: Result[] = [];
     for (const entry of cases) {
       if (stopAfterCurrent) break;
+      await assertLocalCandidate(fingerprint, instanceId);
       if (v3Spent(ledger) + 3 > V3_CALL_CAP) {
         process.stdout.write("Remaining allowance cannot cover another three-call request; saving the incomplete gate report.\n");
         break;
@@ -100,7 +87,8 @@ async function main() {
                 if (scheduleIssues(data.plan, entry.request, data.plan.requirements).length) result.hardIssues.push("published-validator-violation");
                 if (pastScheduleIssues(data.plan, entry.request, new Date()).length) result.hardIssues.push("published-past-or-historical-change");
               }
-            } else if (data.plan || data.outcome !== entry.outcome) result.qualityIssues.push(`expected-${entry.outcome}`);
+            } else if (data.plan) result.hardIssues.push("published-plan-for-clarification-or-conflict");
+            else if (data.outcome !== entry.outcome) result.qualityIssues.push(`expected-${entry.outcome}`);
             if (process.env.HOME_HUDDLE_QUALITY_DIAGNOSTICS === "1" && !data.plan && result.qualityIssues.length) process.stdout.write(`Planning feedback (${entry.id}): ${data.reply.slice(0, 800)}\n`);
           }
         } else {
@@ -120,6 +108,12 @@ async function main() {
           if (result.code === "BEDROCK_AUTH" || result.code === "RATE_LIMIT") result.outcome = "blocked";
         }
       } catch { result.qualityIssues.push("network-or-unreadable-response"); result.outcome = "blocked"; }
+      const candidateCheck = await verifyCandidateAfterResponse(fingerprint, instanceId, calls);
+      calls = candidateCheck.callCount;
+      if (!candidateCheck.matched) {
+        result.qualityIssues.push("candidate-identity-changed");
+        result.outcome = "blocked";
+      }
       result.calls = typeof calls === "number" && Number.isInteger(calls) && calls >= 0 && calls <= 3 ? calls : "unknown";
       result.latencyMs = Math.round(performance.now() - startedAt);
       if (result.outcome !== "blocked") result.outcome = result.hardIssues.length || result.qualityIssues.length ? "fail" : "pass";

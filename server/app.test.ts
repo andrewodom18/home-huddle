@@ -65,6 +65,24 @@ describe("Home Huddle API", () => {
     expect(response.body).toEqual({ status: "ok", bedrockConfigured: true, plannerVersion: 2, capabilities: ["interpreted-requirements", "typed-revisions", "availability", "resource-capacity"] });
   });
 
+  it("reports a startup-frozen local candidate identity without credentials", async () => {
+    const candidateIdentity = {
+      sourceFingerprint: "0123456789abcdef",
+      modelId: "us.amazon.nova-2-lite-v1:0",
+      region: "us-east-1",
+      instanceId: "56c23b7d-0e9f-4df8-a4e5-a596721be46b",
+    };
+    const app = createApp({ chatService: vi.fn(), bedrockConfigured: true, candidateIdentity });
+    const first = await request(app).get("/api/health");
+    process.env.CAMPAIGN_TEST_SECRET = "do-not-expose";
+    const second = await request(app).get("/api/health");
+    delete process.env.CAMPAIGN_TEST_SECRET;
+
+    expect(first.body).toMatchObject(candidateIdentity);
+    expect(second.body).toMatchObject(candidateIdentity);
+    expect(second.text).not.toContain("do-not-expose");
+  });
+
   it("returns only safe call diagnostics for a failed planning attempt", async () => {
     const error = new AppError("INVALID_TOOL_OUTPUT", "Plan failed validation.", { status: 502, cause: { privatePrompt: "never expose" } });
     error.diagnostics = { callCount: 3, stage: "schedule", stopReason: "max_tokens" };
