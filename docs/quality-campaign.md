@@ -4,6 +4,20 @@ The current `dev` source is the candidate under test. Public deployment and the
 published kit release have separate version histories.
 Do not infer deployment from a local build or browser fixture result.
 
+## September 30 candidate readiness
+
+The new local candidate identity guard passed focused tests and a no-model-call
+health check against a temporary local API process. Lint, all three type checks,
+the browser/Node/Lambda build, and 467 unit tests passed; one opt-in live test
+was skipped. The browser run passed 146 Chromium/WebKit checks with 99 configured
+skips. All 35 Firefox cases failed before reaching the app because the browser
+could not find its temporary profile folder on this Mac; a single-case retry
+with a different temporary directory reproduced the launch error. This is not
+an application assertion failure, but the current local browser suite is not
+green. The v3 ledger remains absent and no Bedrock call was made by these checks.
+The earlier public deployment and CI results apply to their recorded commit,
+not automatically to this candidate.
+
 ## Repeatable checks
 
 - `npm run lint`, `npm run typecheck`, `npm run typecheck:browser`, and
@@ -66,10 +80,23 @@ calls before any targeted investigation. The same gate above evaluates all v3
 observations; a later success cannot erase a published hard violation or a failed
 observation. Source changes stop reuse of the v3 ledger, and a new campaign would
 need another explicit allowance. Dates roll forward on each run so a resumed
-campaign does not schedule a previously future case in the past. The operator
-must restart the local API from the
-frozen candidate before running; a source fingerprint of files cannot prove that
-a stale API process matches them.
+campaign does not schedule a previously future case in the past. Before every
+request and after its response, the runner compares its source fingerprint with
+the checkout and the local API's startup-frozen fingerprint, process instance,
+Nova model ID, and region. The local health endpoint reports only those safe
+identifiers and whether authentication is configured. The check rejects a stale
+API or a public-Lambda preview proxy; it does not prove that a configured key is
+still valid. An authentication failure stops the campaign and preserves its
+reservation. Start the authenticated local API from the frozen checkout, not
+the public demo proxy.
+
+Run high-risk cases first with `HOME_HUDDLE_CASES` (custom parallel work,
+cross-month work, shared oven, group setup, maximum tasks, an add-activity
+revision, and conflicting fixed appointments), then run the unfiltered command
+to complete the thirty cases and four critical repeats. Targeted cases and
+repeats share the same ledger and 150-call ceiling. A published plan for a
+required clarification or conflict is now a permanent hard violation, even if
+a later attempt answers correctly.
 
 The historical v2 campaign allowed 150 Converse calls including repairs. On September
 23 the user authorized a recheck of only the three failed cases; this adds at
@@ -110,5 +137,6 @@ enlarged text, and reduced motion. Axe checks support this work but do not estab
 screen-reader usability. Record actual VoiceOver/other screen-reader observation
 separately and mark unavailable checks as unverified.
 
-The five-session protocol in `usability-sessions.md` requires real participants.
-Automated sessions and synthetic users must not be entered as volunteer evidence.
+Five independent usability sessions still require real participants. Automated
+sessions and synthetic users must not be entered as volunteer evidence. No
+participant results are recorded yet.

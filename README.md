@@ -192,7 +192,8 @@ Sharing is for fictional demo data only; anyone with the link can read the
 snapshot until expiry.
 
 `GET /api/health` reports whether local Bedrock authentication is configured
-but never exposes credentials. The hosted Lambda URL accepts the configured
+and, in development, a startup-frozen source fingerprint, process instance,
+model ID, and region. It never exposes credentials. The hosted Lambda URL accepts the configured
 page origin and checks a global quota before each Bedrock call.
 
 ## Quality checks
@@ -222,7 +223,7 @@ HOME_HUDDLE_V3_AUTHORIZED=150 npm run test:quality:v3
 The v3 runner reserves calls before each request and retains a resumable ledger
 under `output/live-corpus-v3/`, separate from v2. It pins the source fingerprint,
 runs all 30 cases and the four required repeats, and fails
-closed if the source changes. Never delete a ledger to obtain another allowance.
+closed if the source or local API identity changes. Never delete a ledger to obtain another allowance.
 No prompts or response bodies are saved. See `docs/quality-campaign.md` for the
 gate, authorization state, and limitations.
 

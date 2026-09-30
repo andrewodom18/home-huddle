@@ -128,8 +128,8 @@ scope; do not describe it as a release pass.
   due to profile/sandbox-extension failures. No local Firefox pass is claimed.
 - **VoiceOver/other screen readers:** keyboard and axe checks passed; spoken output
   and native screen-reader interactions were not verified with available tooling.
-- **Real participants:** zero new participant sessions. The five-session protocol
-  and result sheet remain explicitly pending in `usability-sessions.md`.
+- **Real participants:** zero new participant sessions. The five-session study
+  and its results remain pending.
 - **Devices and deployment:** no new native Alexa+/Fire TV device validation and no
   AWS deployment smoke test. Historical deployed evidence is labeled separately.
 
