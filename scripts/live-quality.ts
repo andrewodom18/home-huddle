@@ -39,6 +39,7 @@ async function main() {
     if (!health.ok || !state.bedrockConfigured || state.plannerVersion !== 2) throw new Error("Current planner-v2 API with Bedrock authentication is not ready; no model requests sent.");
     const fingerprint = await sourceFingerprint();
     const ledgerPath = `${output}/campaign-ledger.json`;
+    await readFile(ledgerPath, "utf8").catch(() => { throw new Error("Historical v2 campaign ledger is unavailable; a fresh run needs a new campaign and budget."); });
     const ledger = await readLedger(ledgerPath);
     const corpus = buildCorpus();
     const selected = process.env.HOME_HUDDLE_CASES?.split(",").filter(Boolean);

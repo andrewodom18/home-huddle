@@ -168,6 +168,7 @@ async function main() {
   const state = await health.json() as { status?: string; bedrockConfigured?: boolean };
   if (!health.ok || state.status !== "ok" || state.bedrockConfigured !== true) throw new Error("Local Bedrock API is not ready; no requests sent");
   await mkdir(OUTPUT, { recursive: true });
+  await readFile(`${OUTPUT}/campaign-ledger.json`, "utf8").catch(() => { throw new Error("Historical corpus ledger is unavailable; a fresh run needs a new campaign and budget."); });
   try {
     const ledger = JSON.parse(await readFile(`${OUTPUT}/campaign-ledger.json`, "utf8")) as { reservedCallCeiling?: number };
     previousUpperBound = ledger.reservedCallCeiling ?? 42;

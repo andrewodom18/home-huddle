@@ -1,9 +1,7 @@
 import { readFile, rename, writeFile } from "node:fs/promises";
 import { z } from "zod";
 
-// September 23: the user authorized a targeted recheck of the three failed
-// cases. At most nine additional calls are reserved; the original 150-call
-// allowance and its existing attempts remain in this same ledger.
+// Historical v2 budget: 150 original calls plus nine reserved recheck calls.
 export const CALL_CAP = 159;
 const attemptSchema = z.object({
   id: z.string(), caseId: z.string(), sourceFingerprint: z.string(), startedAt: z.string(),
