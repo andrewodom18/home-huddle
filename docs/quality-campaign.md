@@ -1,10 +1,14 @@
 # Quality campaign and release evidence
 
 The current `dev` source is the candidate under test. The October 5 public
-frontend deploys `b5d0ef4`, and the existing Lambda was updated from aligned
-`main`/`dev` commit `d69935a` after live custom-request failures. The published
-kit release has a separate version history. The focused public smoke checks
-are not a pass of the unrun v3 planning gate.
+frontend and existing Lambda were last deployed from aligned `main`/`dev`
+commit `a80f28b` after live custom-request failures. The frontend asset bundle
+is unchanged from `b5d0ef4`. The published kit release has a separate version
+history. [CI run 37359020500](https://github.com/andrewodom18/home-huddle/actions/runs/37359020500)
+passed lint, type checks, 476 unit tests, 181 browser tests, build, and packaged
+Lambda cold start on `a80f28b` (one opt-in live unit test and 99 configured
+browser cases skipped). The focused public smoke checks are not a pass of the
+unrun v3 planning gate.
 Do not infer deployment from a local build or browser fixture result.
 
 ## September 30 candidate readiness

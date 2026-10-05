@@ -8,6 +8,12 @@ completed successfully. The served HTML references `index-L-RrcQsL.js` and
 `index-QrpzYbzy.css`; the CSS contains the immediate-scroll revision fix.
 [CI run 37350792038](https://github.com/andrewodom18/home-huddle/actions/runs/37350792038)
 passed on that frontend commit.
+[Final public demo run 37359024167](https://github.com/andrewodom18/home-huddle/actions/runs/37359024167)
+later succeeded on `a80f28b`; the served frontend asset names remained the same.
+[Final CI run 37359020500](https://github.com/andrewodom18/home-huddle/actions/runs/37359020500)
+passed on that commit: lint, type checks, 476 unit tests, 181 browser tests,
+build, and packaged Lambda cold start. One opt-in live unit test and 99
+configured browser cases were skipped.
 
 At the first frontend deployment, the Lambda was unchanged. Its bundled
 `dist-lambda/index.js` SHA-256 is
@@ -24,13 +30,19 @@ Friday, exposing a missing weekday check. Commit `1ed5209` added that check and
 asks for AM/PM before interpreting bare fixed times. These are application bugs,
 not AWS service or tooling friction.
 
+CI later found that the first AM/PM guard also intercepted contextual time
+windows such as “from 4–6 PM.” Commit `a80f28b` narrowed it to bare event
+times introduced by “at”; the previously failed test files passed locally.
+
 The final backend build is from aligned `main` and `dev` commit
-`d69935a6de8cde3cb241a59c5974d9efe6d5eefb`. The local and CloudShell
+`a80f28bfbb1e419a24351529dc63703ac7260bd5`. The local and CloudShell
 `dist-lambda/index.js` SHA-256 both equal
-`436c58d7897da3f52faff027b9724f378d36c6d634f12d1137a44b9cefa9ea7f`.
-CloudShell updated the existing `home-huddle-demo-chat` function in `us-east-1`;
-`LastUpdateStatus=Successful`, `LastModified=2026-10-05T18:09:44Z`, and
-`CodeSha256=vevsBcOttP6wFrDpKQPAgEL+vjtzp90na90hCR7t7VU=`. The existing
+`f5873d229535f4ff912fd7f60bf115944724242ad3d4fd8286e80986ccde7f98`.
+CloudShell in `us-west-2` updated the existing `home-huddle-demo-chat`
+function in `us-east-1` after the original region's CloudShell credential
+metadata endpoint returned HTTP 500. The update reported
+`LastUpdateStatus=Successful`, `LastModified=2026-10-05T18:50:21Z`, and
+`CodeSha256=Jr0Ssv6iMxbwcSoTbtbi0PwM15d/uGN6q09kqW/nah4=`. The existing
 Function URL, role, tables, and quotas remain in place.
 
 In an isolated browser on the public page, a fictional October 10 chores
@@ -41,9 +53,11 @@ same-source live planning gate or five-person usability target. The regular
 Chrome profile had a separate saved failed request, which was left untouched.
 Against the final Lambda, a fictional request with four bare clock times returned
 a focused AM/PM clarification with zero model calls. A separate fictional
-five-activity next-week request with explicit times published all five activities
-on the independently expected Monday, Tuesday, and Thursday dates in two
-Bedrock calls. These focused checks do not constitute a same-source live gate.
+five-activity next-week request with explicit times was checked against the
+preceding `d69935a` Lambda build: it published all five activities on the
+independently expected Monday, Tuesday, and Thursday dates in two Bedrock calls.
+The final `a80f28b` build only narrowed the fixed-time ambiguity guard after
+that check. These focused checks do not constitute a same-source live gate.
 
 ## September 25, 2026 paired deployment
 

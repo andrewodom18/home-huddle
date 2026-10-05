@@ -7,7 +7,7 @@ evidence belongs in
 `docs/implementation-validation.md` and `output/live-corpus-v2/report.md`.
 The October 5 public page deploys the touch-review fix from `b5d0ef4`.
 The existing Lambda was subsequently updated from aligned source commit
-`d69935a` after live custom requests exposed optional-field serialization and
+`a80f28b` after live custom requests exposed optional-field serialization and
 relative-week interpretation defects. The observed fictional plan, revision,
 undo, clarification, and five-activity date check are recorded in
 `docs/deployment-validation.md`.
@@ -197,9 +197,8 @@ References: [hackathon rules](https://amazonappdev2026.devpost.com/rules),
 [Bedrock API keys](https://docs.aws.amazon.com/bedrock/latest/userguide/api-keys.html),
 [Nova inference](https://docs.aws.amazon.com/nova/latest/nova2-userguide/core-inference.html).
 Entries 1–3 describe documentation and onboarding friction. Entries 4–6
-describe application/model interaction defects found during our testing; they
-are not reports of AWS service outages. The latter belong in the product
-quality evidence even if they are submitted as development friction.
+describe application/model interaction defects, not AWS service outages.
+Entry 7 records a separate AWS CloudShell tooling failure.
 
 ### 1. Choosing JavaScript authentication
 
@@ -309,6 +308,24 @@ quality evidence even if they are submitted as development friction.
   extension. It contains 146 known completed calls plus nine reserved for three
   interrupted requests, a conservative upper bound of 155/159. The same-source
   gate remains unverified by the user's narrower testing choice.
+
+### 7. CloudShell credentials failed during a Lambda update
+
+- **Observed:** October 5, 2026, during the existing `home-huddle-demo-chat`
+  function update in `us-east-1`.
+- **Reproduction:** From the signed-in `us-east-1` CloudShell, run
+  `aws sts get-caller-identity` or `aws lambda update-function-code` after the
+  environment restarts. Both failed while retrieving container-role credentials;
+  the metadata endpoint returned HTTP 500. Restarting that CloudShell did not
+  resolve the failure.
+- **Expected:** CloudShell's temporary credentials remain available to the AWS
+  CLI while the Console session is valid.
+- **Workaround:** Open CloudShell in `us-west-2`, verify the account identity,
+  build the same source commit there, and target the existing function with
+  `--region us-east-1`. The update completed with `LastUpdateStatus=Successful`.
+- **Attribution:** This was an AWS CloudShell credential-metadata error, separate
+  from the application's planning bugs and Bedrock model output. No credentials
+  or household prompts were copied into the workaround.
 
 ## Current candidate completion checklist
 
