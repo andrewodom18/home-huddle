@@ -51,6 +51,7 @@ export type ConverseContext = {
   planDate?: string;
   stage?: "interpret" | "revise" | "schedule";
   localTime?: { date: string; minute: number; zone: string };
+  requestedWeek?: { start: string; end: string };
   requestDeadlineMs?: number;
 };
 
@@ -250,7 +251,9 @@ export function createBedrockGateway(
       const revisionContext = context?.requestedRevision
         ? `\n\nRequired event edit. Publish the full revised plan with this exact change; the server will reject a no-op or wrong value:\n${JSON.stringify(context.requestedRevision)}`
         : "";
-      const planDateContext = context?.planDate ? context.requirements?.tasks.some((task) => task.date)
+      const planDateContext = context?.requestedWeek
+        ? `\n\nThe user requested NEXT WEEK. In the household time zone, that means Monday ${context.requestedWeek.start} through Sunday ${context.requestedWeek.end}, inclusive. Every activity in this new request must have a date in that range. Map named weekdays to those calendar dates. The selected calendar date is only a UI anchor, not the requested week.`
+        : context?.planDate ? context.requirements?.tasks.some((task) => task.date)
         ? `\n\nSelected calendar anchor: ${context.planDate}. This is NOT an event date. Use each authoritative task.date exactly, including future dates for built-in examples. Never replace task dates with the anchor.`
         : `\n\nDefault date for a single-day plan: ${context.planDate}. Multi-day plans must set each item date explicitly.` : "";
 

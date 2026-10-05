@@ -10,6 +10,7 @@ import {
   type PlanRequirements,
 } from "../shared/contracts";
 import { isDeepStrictEqual } from "node:util";
+import { DateTime } from "luxon";
 import { scenarioRequirements } from "../shared/scenarios";
 import {
   createBedrockGateway,
@@ -43,6 +44,12 @@ type ChatServiceOptions = {
 };
 
 type ScenarioEdits = NonNullable<HouseholdPlan["scenarioEdits"]>;
+
+function requestedNextWeek(message: string, localDate: string): { start: string; end: string } | undefined {
+  if (!/\bnext\s+week\b/i.test(message)) return undefined;
+  const monday = DateTime.fromISO(localDate).startOf("week").plus({ weeks: 1 });
+  return { start: monday.toISODate()!, end: monday.plus({ days: 6 }).toISODate()! };
+}
 
 function normalizeClock(value: unknown): unknown {
   if (typeof value !== "string") return value;
@@ -349,6 +356,7 @@ export function createChatService(
     try {
     const requestInstant = now();
     const currentLocal = localNow(requestInstant, request.timeZone);
+    const requestedWeek = !request.currentPlan ? requestedNextWeek(request.message, currentLocal.date) : undefined;
     const startsNewPlan = !request.currentPlan && (Boolean(request.scenarioId) || /\b(?:plan|schedule|create|add|book|arrange)\b/i.test(request.message));
     if (startsNewPlan && request.planDate && request.planDate < currentLocal.date) {
       throw new AppError("VALIDATION", `The selected date ${request.planDate} has already passed in ${currentLocal.zone}. Choose today or a future date.`, { status: 400 });
@@ -487,6 +495,7 @@ export function createChatService(
         planDate: request.planDate,
         stage,
         localTime: currentLocal,
+        requestedWeek,
         requestDeadlineMs,
       });
       lastStopReason = response.stopReason;
@@ -571,6 +580,13 @@ export function createChatService(
           if (!parsed.success) issues = parsed.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`);
           else {
             issues = requirementsIssues(parsed.data.requirements, parsed.data.participants);
+            if (requestedWeek) {
+              for (const task of parsed.data.requirements.tasks) {
+                if (!task.date || task.date < requestedWeek.start || task.date > requestedWeek.end) {
+                  issues.push(`${task.label}: next week is ${requestedWeek.start} through ${requestedWeek.end}; use a date in that range`);
+                }
+              }
+            }
             issues.push(...resourceCaptureIssues(parsed.data.requirements, request.message, request.history));
             issues.push(...orderingCaptureIssues(parsed.data.requirements, request.message, request.history));
             if (parsed.data.requirements.source !== "interpreted") issues.push("Free-text requirements must be interpreted");

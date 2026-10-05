@@ -29,6 +29,22 @@ function service(responses: BedrockResponse[]) {
 }
 
 describe("independent interpretation and scheduling", () => {
+  it("corrects a next-week request before publishing an activity this week", async () => {
+    const monday = { ...requirements, assumptions: [], tasks: [{ id: "lesson", label: "Piano lesson", date: "2026-10-12", fixedStartTime: "12:00 PM", durationMinutes: 60, requiredParticipants: ["Alex"] }] };
+    const thisWeek = { ...monday, tasks: monday.tasks.map((task) => ({ ...task, date: "2026-10-05" })) };
+    const schedule: PlanDraft = { title: "Next week", objective: "Piano lesson", participants: ["Alex"], requirements: monday, notes: [], items: [{ taskId: "lesson", date: "2026-10-12", task: "Piano lesson", startTime: "12:00 PM", durationMinutes: 60, assignee: "Alex" }] };
+    const interpret = (rules: PlanRequirements) => tool("interpret_household_request", { title: "Next week", objective: "Piano lesson", participants: ["Alex"], requirements: rules });
+    const responses = [interpret(thisWeek), interpret(monday), tool("publish_household_plan", schedule)];
+    const converse = vi.fn<BedrockGateway["converse"]>(async () => responses.shift()!);
+    const chat = createChatService({ gateway: { modelId: "test", converse }, now: () => new Date("2026-10-05T17:00:00Z"), logger: vi.fn() });
+
+    const result = await chat({ message: "Plan next week: Alex has a piano lesson Monday at noon.", history: [], planDate: "2026-10-05", timeZone: "America/Chicago" });
+    expect(result).toMatchObject({ outcome: "plan", meta: { callCount: 3 } });
+    expect(result.plan?.items[0].date).toBe("2026-10-12");
+    expect(converse.mock.calls[0][1]?.requestedWeek).toEqual({ start: "2026-10-12", end: "2026-10-18" });
+    expect(converse.mock.calls[1][0].some((message) => message.content.some((block) => "toolResult" in block && block.toolResult.status === "error"))).toBe(true);
+  });
+
   it.each([
     ["9 AM", "noon", "9am", "9:00 AM", "12:00 PM"],
     ["09 a.m.", "5 p.m.", "1PM", "9:00 AM", "5:00 PM"],
