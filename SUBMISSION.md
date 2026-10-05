@@ -2,15 +2,19 @@
 
 This file collects the candidate narrative, evidence, and remaining submission
 work. Source commits and public deployments have separate version histories.
-Historical deployment checks below apply only to the earlier public version; current quality
+Historical deployment checks below apply only to their recorded versions; current quality
 evidence belongs in
 `docs/implementation-validation.md` and `output/live-corpus-v2/report.md`.
-The September 25 page and API deployment of source commit `a33a158` has a separate
-record in `docs/deployment-validation.md`; its smoke checks do not satisfy the
-unrun same-source planning-quality gate.
+The October 5 public page deploys the touch-review fix from `b5d0ef4`.
+The existing Lambda was subsequently updated from aligned source commit
+`d69935a` after live custom requests exposed optional-field serialization and
+relative-week interpretation defects. The observed fictional plan, revision,
+undo, clarification, and five-activity date check are recorded in
+`docs/deployment-validation.md`.
+These smoke checks do not satisfy the unrun same-source planning-quality gate.
 The September 30 candidate adds local API/source identity checks to the v3
 runner. The new campaign remains unrun and no real participant sessions have
-been recorded; this change does not alter the September 25 public deployment.
+been recorded.
 The September 30 local preflight passed 467 unit tests, lint, types, and builds;
 Chromium/WebKit browser checks passed, while this Mac's Firefox launch failed
 before application checks. See `docs/quality-campaign.md` for exact counts.

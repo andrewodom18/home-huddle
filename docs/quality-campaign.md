@@ -1,7 +1,10 @@
 # Quality campaign and release evidence
 
-The current `dev` source is the candidate under test. Public deployment and the
-published kit release have separate version histories.
+The current `dev` source is the candidate under test. The October 5 public
+frontend deploys `b5d0ef4`, and the existing Lambda was updated from aligned
+`main`/`dev` commit `d69935a` after live custom-request failures. The published
+kit release has a separate version history. The focused public smoke checks
+are not a pass of the unrun v3 planning gate.
 Do not infer deployment from a local build or browser fixture result.
 
 ## September 30 candidate readiness
