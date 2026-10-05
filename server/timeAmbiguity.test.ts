@@ -6,6 +6,7 @@ import { ambiguousClockTimes } from "./timeAmbiguity";
 describe("fixed-time ambiguity", () => {
   it("finds bare event times without treating explicit meridiems or 24-hour times as ambiguous", () => {
     expect(ambiguousClockTimes("Lesson starting at 12:00, dinner at 7:30, doctor at 4, pickup at 9. Groceries at 9 AM, walk at 17:00, lunch at noon.")).toEqual(["12:00", "7:30", "4", "9"]);
+    expect(ambiguousClockTimes("Plan tonight from 5:30 to 8, or tomorrow from 4–6 PM.")).toEqual([]);
   });
 
   it("asks one clarification before Bedrock can invent fixed commitments", async () => {
