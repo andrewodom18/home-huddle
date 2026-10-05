@@ -6,10 +6,8 @@ assignable schedule and supports conversational revisions.
 
 [Try the public demo](https://andrewodom18.github.io/home-huddle/).
 
-The features below describe the source candidate. The public page and API are
-deployed separately; check their deployment records before treating the live
-demo as the same version. The latest deployment is recorded in
-[`docs/deployment-validation.md`](docs/deployment-validation.md).
+The web app and API are deployed separately. See [verification and deployment
+evidence](docs/verification.md) for the version currently running in the demo.
 
 Conversation state stays in the browser. The Node API does not persist prompts;
 it sends model-bound planning requests to Amazon Bedrock. The public page runs on
@@ -144,12 +142,10 @@ npm ci
 cp .env.example .env.local
 ```
 
-This working candidate consumes the locally built Conversation Display Kit
-`0.3.0` archive in `vendor/`. It is pinned in the lockfile so a standalone checkout
-can run `npm ci` without the sibling repository or an unpublished release URL.
-The archive includes the MIT license and public package files; its source lives
-in the separate Conversation Display Kit repository. This does not publish a
-new kit release or change the hosted Home Huddle demo.
+The lockfile uses the Conversation Display Kit `0.3.0` archive in `vendor/`, so a
+standalone checkout can run `npm ci` without a sibling repository or unpublished
+registry version. The archive includes its MIT license; its source is in the
+separate Conversation Display Kit repository.
 
 Keep `.env.local` free of secrets. With an AWS CLI IAM Identity Center profile
 configured outside this repository and signed in, start both servers with
@@ -209,30 +205,13 @@ npx playwright install chromium firefox webkit
 npm run test:browser
 ```
 
-The independent 30-case real-service quality campaign is opt-in and local-only.
-The prior v2 campaign is preserved under `output/live-corpus-v2/`; its 159-call
-allowance is nearly exhausted and does not establish a current-source pass.
-A separate v3 campaign is prepared but has **not** been authorized or run.
-After a separate 150-call authorization, freeze the candidate, start the
-matching authenticated local API, and run:
-
-```bash
-HOME_HUDDLE_V3_AUTHORIZED=150 npm run test:quality:v3
-```
-
-The v3 runner reserves calls before each request and retains a resumable ledger
-under `output/live-corpus-v3/`, separate from v2. It pins the source fingerprint,
-runs all 30 cases and the four required repeats, and fails
-closed if the source or local API identity changes. Never delete a ledger to obtain another allowance.
-No prompts or response bodies are saved. See `docs/quality-campaign.md` for the
-gate, authorization state, and limitations.
-
-The smaller historical `smoke:bedrock` command is only a connectivity check and
-does not establish planning quality. Do not run it outside an agreed call allowance.
+The browser suite uses fixtures and makes no Bedrock calls. The separate 30-case
+live corpus has independently specified constraints and a source-pinned,
+call-budgeted runner (`npm run test:quality:v3`). It is opt-in because it invokes
+Bedrock and incurs usage. Its same-source campaign has not yet been completed;
+passing fixture tests alone does not establish live planning reliability. See
+[verification evidence](docs/verification.md) for current results and limits.
 The public Lambda uses an IAM execution role and does not need a bearer key.
-The preserved campaign mixes source versions and does not pass the same-version
-release gate. A new campaign needs its own approved call ceiling and must run
-all cases and required repeats on one frozen source fingerprint.
 
 ## Public demo deployment
 
@@ -268,8 +247,7 @@ resources.
 - Open-source companion:
   [andrewodom18/conversation-display-kit](https://github.com/andrewodom18/conversation-display-kit)
 
-Development happens on `dev`. Submission-ready releases are fast-forwarded to
-`main`, and both branches are kept aligned at release time.
+Development happens on `dev`; public releases are built from `main`.
 
 ## License
 

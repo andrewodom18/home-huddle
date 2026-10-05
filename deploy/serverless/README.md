@@ -73,6 +73,5 @@ run the `Public demo` workflow on `main`. It builds with
 browser bundle. The URL is public by design; it is not an AWS credential.
 
 Verify the HTTPS page, one fictional scenario, one revision, AWS evidence,
-and a visible quota error using a temporarily low test quota. Then restore
-the chosen quota and publish the video and hackathon links. Never log prompts
-or household details during verification.
+and a visible quota error using a temporarily low test quota. Restore the
+chosen quota afterward. Never log prompts or household details during verification.
