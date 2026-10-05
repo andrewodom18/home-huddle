@@ -142,9 +142,9 @@ function toSdkDocument(value: unknown): Exclude<ToolUseBlock["input"], undefined
     return value;
   }
   if (Array.isArray(value)) return value.map(toSdkDocument);
-  if (value && typeof value === "object" && Object.getPrototypeOf(value) === Object.prototype) {
+  if (value && typeof value === "object" && [Object.prototype, null].includes(Object.getPrototypeOf(value))) {
     return Object.fromEntries(
-      Object.entries(value).map(([key, entry]) => [key, toSdkDocument(entry)]),
+      Object.entries(value).filter(([, entry]) => entry !== undefined).map(([key, entry]) => [key, toSdkDocument(entry)]),
     );
   }
   throw new AppError("BEDROCK_UNAVAILABLE", "Amazon Bedrock returned invalid tool data.", {

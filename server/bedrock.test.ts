@@ -1,6 +1,8 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from "vitest";
+import type { ConverseCommandOutput, ToolUseBlock } from "@aws-sdk/client-bedrock-runtime";
 import { createBedrockGateway } from "./bedrock";
+import { createChatService } from "./chatService";
 
 describe("createBedrockGateway", () => {
   it("advertises the interpretation provenance and clock contract that the server accepts", async () => {
@@ -209,6 +211,47 @@ describe("createBedrockGateway", () => {
     expect(result.requestId).toBe("iam-request-id");
     expect(result.output.message.content).toEqual([{ text: "Ready" }]);
     expect(sdkSend).toHaveBeenCalledOnce();
+  });
+
+  it("schedules a custom request through IAM when optional constraints are absent", async () => {
+    const requirements = {
+      source: "interpreted", timeWindow: { startTime: "9:00 AM", endTime: "12:00 PM" },
+      tasks: [{ id: "groceries", date: "2026-10-10", label: "Grocery trip", durationMinutes: 30, requiredParticipants: ["Alex"] }],
+    };
+    const tool = (name: string, input: unknown): ConverseCommandOutput => ({
+      $metadata: { requestId: name },
+      output: { message: { role: "assistant" as const, content: [{ toolUse: { toolUseId: name, name, input: input as Exclude<ToolUseBlock["input"], undefined> } }] } },
+      stopReason: "tool_use" as const,
+      usage: { inputTokens: 10, outputTokens: 20, totalTokens: 30 }, metrics: { latencyMs: 1 },
+    });
+    let call = 0;
+    const sdkSend = vi.fn(async (command) => {
+      call += 1;
+      if (call === 1) return tool("interpret_household_request", {
+        title: "Grocery trip", objective: "Buy groceries", participants: ["Alex"], requirements,
+      });
+      const result = command.input.messages?.at(-1)?.content?.[0]?.toolResult?.content?.[0]?.json as { requirements?: Record<string, unknown> };
+      expect(result.requirements).toEqual(requirements);
+      expect(result.requirements).not.toHaveProperty("timeWindows");
+      expect(result.requirements).not.toHaveProperty("availability");
+      return tool("publish_household_plan", {
+        title: "Grocery trip", objective: "Buy groceries", participants: ["Alex"], requirements, notes: [],
+        items: [{ taskId: "groceries", date: "2026-10-10", task: "Grocery trip", startTime: "9:00 AM", durationMinutes: 30, assignee: "Alex" }],
+      });
+    });
+    const chat = createChatService({
+      gateway: createBedrockGateway({ authMode: "iam", sdkSend }),
+      now: () => new Date("2026-10-05T17:00:00.000Z"), logger: vi.fn(),
+    });
+
+    const response = await chat({
+      message: "Plan a 30-minute grocery trip for Alex on October 10 between 9 AM and noon.",
+      history: [], planDate: "2026-10-10", timeZone: "America/Chicago",
+    });
+    expect(response.outcome).toBe("plan");
+    expect(response.meta.callCount).toBe(2);
+    expect(response.plan?.requirements).not.toHaveProperty("timeWindows");
+    expect(sdkSend).toHaveBeenCalledTimes(2);
   });
 
   it("tells Bedrock that explicit non-fixed preset details may be customized safely", async () => {

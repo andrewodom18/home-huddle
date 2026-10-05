@@ -68,23 +68,17 @@ function normalizeToolTimes(input: unknown): unknown {
   const checklist = plan.requirements && typeof plan.requirements === "object" && !Array.isArray(plan.requirements)
     ? plan.requirements as Record<string, unknown>
     : undefined;
-  return {
-    ...plan,
-    items: Array.isArray(plan.items) ? plan.items.map((item) => clockFields(item, ["startTime"])) : plan.items,
-    requirements: checklist ? {
-      ...checklist,
-      timeWindow: clockFields(checklist.timeWindow, ["startTime", "endTime"]),
-      timeWindows: Array.isArray(checklist.timeWindows)
-        ? checklist.timeWindows.map((window) => clockFields(window, ["startTime", "endTime"]))
-        : checklist.timeWindows,
-      availability: Array.isArray(checklist.availability)
-        ? checklist.availability.map((window) => clockFields(window, ["startTime", "endTime"]))
-        : checklist.availability,
-      tasks: Array.isArray(checklist.tasks)
-        ? checklist.tasks.map((task) => clockFields(task, ["fixedStartTime", "earliestStartTime", "latestEndTime"]))
-        : checklist.tasks,
-    } : plan.requirements,
-  };
+  const normalized = { ...plan };
+  if ("items" in plan && Array.isArray(plan.items)) normalized.items = plan.items.map((item) => clockFields(item, ["startTime"]));
+  if (checklist) {
+    const requirements = { ...checklist };
+    if ("timeWindow" in checklist) requirements.timeWindow = clockFields(checklist.timeWindow, ["startTime", "endTime"]);
+    if (Array.isArray(checklist.timeWindows)) requirements.timeWindows = checklist.timeWindows.map((window) => clockFields(window, ["startTime", "endTime"]));
+    if (Array.isArray(checklist.availability)) requirements.availability = checklist.availability.map((window) => clockFields(window, ["startTime", "endTime"]));
+    if (Array.isArray(checklist.tasks)) requirements.tasks = checklist.tasks.map((task) => clockFields(task, ["fixedStartTime", "earliestStartTime", "latestEndTime"]));
+    normalized.requirements = requirements;
+  }
+  return normalized;
 }
 
 function normalizeChangeTimes(input: unknown): unknown {
