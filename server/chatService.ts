@@ -10,7 +10,6 @@ import {
   type PlanRequirements,
 } from "../shared/contracts";
 import { isDeepStrictEqual } from "node:util";
-import { DateTime } from "luxon";
 import { scenarioRequirements } from "../shared/scenarios";
 import {
   createBedrockGateway,
@@ -26,6 +25,8 @@ import { orderingCaptureIssues, resourceCaptureIssues } from "./captureValidatio
 import { shortenSchedule } from "./scheduleOptimization";
 import { assignedPeople, minutes, scheduleIssues } from "./scheduleValidation";
 import { localNow, pastEventIssue, pastScheduleIssues } from "./pastSchedule";
+import { nextWeekCaptureIssues, requestedNextWeek } from "./relativeWeek";
+import { ambiguousClockTimes } from "./timeAmbiguity";
 import {
   isUnverifiedEventEditRequest,
   naturalRevisionIntent,
@@ -44,12 +45,6 @@ type ChatServiceOptions = {
 };
 
 type ScenarioEdits = NonNullable<HouseholdPlan["scenarioEdits"]>;
-
-function requestedNextWeek(message: string, localDate: string): { start: string; end: string } | undefined {
-  if (!/\bnext\s+week\b/i.test(message)) return undefined;
-  const monday = DateTime.fromISO(localDate).startOf("week").plus({ weeks: 1 });
-  return { start: monday.toISODate()!, end: monday.plus({ days: 6 }).toISODate()! };
-}
 
 function normalizeClock(value: unknown): unknown {
   if (typeof value !== "string") return value;
@@ -361,6 +356,14 @@ export function createChatService(
     if (startsNewPlan && request.planDate && request.planDate < currentLocal.date) {
       throw new AppError("VALIDATION", `The selected date ${request.planDate} has already passed in ${currentLocal.zone}. Choose today or a future date.`, { status: 400 });
     }
+    if (!request.currentPlan && !request.scenarioId) {
+      const ambiguousTimes = ambiguousClockTimes(request.message);
+      if (ambiguousTimes.length) return {
+        outcome: "clarification",
+        reply: `What is the AM/PM for each fixed time (${ambiguousTimes.join(", ")})? I need that before placing them.`,
+        meta: { provider: "Home Huddle", modelId: "Time clarification", toolUsed: false, latencyMs: Math.round(performance.now() - startedAt), callCount: 0 },
+      };
+    }
     const firstUser = request.history.findIndex((message) => message.role === "user");
     const history = firstUser < 0 ? [] : request.history.slice(firstUser);
     const messages: BedrockMessage[] = [
@@ -580,13 +583,7 @@ export function createChatService(
           if (!parsed.success) issues = parsed.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`);
           else {
             issues = requirementsIssues(parsed.data.requirements, parsed.data.participants);
-            if (requestedWeek) {
-              for (const task of parsed.data.requirements.tasks) {
-                if (!task.date || task.date < requestedWeek.start || task.date > requestedWeek.end) {
-                  issues.push(`${task.label}: next week is ${requestedWeek.start} through ${requestedWeek.end}; use a date in that range`);
-                }
-              }
-            }
+            if (requestedWeek) issues.push(...nextWeekCaptureIssues(parsed.data.requirements, request.message, requestedWeek));
             issues.push(...resourceCaptureIssues(parsed.data.requirements, request.message, request.history));
             issues.push(...orderingCaptureIssues(parsed.data.requirements, request.message, request.history));
             if (parsed.data.requirements.source !== "interpreted") issues.push("Free-text requirements must be interpreted");

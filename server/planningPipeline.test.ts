@@ -45,6 +45,19 @@ describe("independent interpretation and scheduling", () => {
     expect(converse.mock.calls[1][0].some((message) => message.content.some((block) => "toolResult" in block && block.toolResult.status === "error"))).toBe(true);
   });
 
+  it("rejects a named Thursday activity placed on Friday inside the requested week", async () => {
+    const thursday: PlanRequirements = { source: "interpreted", timeWindow: { startTime: "8:00 AM", endTime: "6:00 PM" }, tasks: [{ id: "groceries", label: "Shop for groceries", date: "2026-10-15", fixedStartTime: "10:00 AM", durationMinutes: 45, requiredParticipants: ["Alex"] }] };
+    const friday = { ...thursday, tasks: thursday.tasks.map((task) => ({ ...task, date: "2026-10-16" })) };
+    const captureGroceries = (rules: PlanRequirements) => tool("interpret_household_request", { title: "Groceries", objective: "Shop for groceries", participants: ["Alex"], requirements: rules });
+    const draft: PlanDraft = { title: "Groceries", objective: "Shop for groceries", participants: ["Alex"], requirements: thursday, notes: [], items: [{ taskId: "groceries", task: "Shop for groceries", date: "2026-10-15", startTime: "10:00 AM", durationMinutes: 45, assignee: "Alex" }] };
+    const responses = [captureGroceries(friday), captureGroceries(thursday), tool("publish_household_plan", draft)];
+    const converse = vi.fn<BedrockGateway["converse"]>(async () => responses.shift()!);
+    const chat = createChatService({ gateway: { modelId: "test", converse }, now: () => new Date("2026-10-05T17:00:00Z"), logger: vi.fn() });
+    const result = await chat({ message: "Plan next week for Alex: shop for groceries on Thursday at 10 AM. I am free from 8 AM to 6 PM.", history: [], planDate: "2026-10-05", timeZone: "America/Chicago" });
+    expect(result.plan?.items[0].date).toBe("2026-10-15");
+    expect(result.meta.callCount).toBe(3);
+  });
+
   it.each([
     ["9 AM", "noon", "9am", "9:00 AM", "12:00 PM"],
     ["09 a.m.", "5 p.m.", "1PM", "9:00 AM", "5:00 PM"],
