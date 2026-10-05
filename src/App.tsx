@@ -170,7 +170,8 @@ function PlannerApp() {
   }, [messages, plan, draftPlan, draftSourceMessage, draftNeedsResolution, draftCorrectionStartId, proposal, proposalDate, undoPlan, undoDate, scenarioId, calendarDate, timeZone, meta, failure]);
 
   useEffect(() => {
-    if (proposal) proposalRef.current?.scrollIntoView?.({ behavior: scrollBehavior(), block: "center" });
+    // Keep the review actions stationary as they appear, especially for touch input.
+    if (proposal) proposalRef.current?.scrollIntoView?.({ behavior: "auto", block: "center" });
   }, [proposal]);
 
   useEffect(() => {

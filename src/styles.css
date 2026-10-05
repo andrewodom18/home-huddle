@@ -7,7 +7,7 @@
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: auto; }
 body {
   min-width: 320px;
   min-height: 100vh;
