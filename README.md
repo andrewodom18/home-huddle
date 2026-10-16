@@ -144,7 +144,7 @@ npm ci
 cp .env.example .env.local
 ```
 
-The lockfile uses the Conversation Display Kit `0.3.2` archive in `vendor/`, so a
+The lockfile uses the Conversation Display Kit `0.3.3` archive in `vendor/`, so a
 standalone checkout can run `npm ci` without a sibling repository or unpublished
 registry version. The archive includes its MIT license; its source is in the
 separate Conversation Display Kit repository.

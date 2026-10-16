@@ -8,7 +8,7 @@ web simulation; it does not claim native Alexa+ device integration.
 The `dev` branch preserves accepted preset edits in later revisions, lets an
 explicit custom-appointment change supersede its old chat history, and keeps
 the share-date confirmation synchronized after an event date move and undo.
-It vendors Conversation Display Kit `0.3.2`, which follows rapid responses
+It vendors Conversation Display Kit `0.3.3`, which follows rapid responses
 with smooth, interruptible scrolling and honors reduced motion. The original
 blue background and composer glow are restored, and page/chat scrollbars are
 hidden while scrolling remains available. Calendar navigation animates; revision
