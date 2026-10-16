@@ -3,7 +3,7 @@
 Home Huddle's browser and Lambda are released separately. The public demo is a
 web simulation; it does not claim native Alexa+ device integration.
 
-## Local dev buffer fix, October 16, 2026
+## Buffer fix released October 16, 2026
 
 The named buffer request from the deployment smoke now updates the accepted
 checklist before scheduling. A bounded local timing search can satisfy the gap
@@ -20,10 +20,20 @@ buffer request: both returned checked plans with **zero model calls**, a real
 10-minute gap, and the accepted 30-minute kitchen duration intact. This check
 used fictional data and did not contact Bedrock or the public API.
 
-This fix is local on `dev`; it has not been pushed or deployed. The public
-release and its historical live-smoke result below are unchanged.
+The fix was published from `501f509` to GitHub Pages and the existing Lambda.
+A postdeployment check sent two fictional requests to the public API: the
+kitchen editor change and the exact named buffer request. Both returned HTTP 200,
+passed schema, CORS, schedule, date, and preservation checks, and used **zero
+model calls**. The second plan retained the accepted 30-minute kitchen duration
+and contained a real 10-minute laundry-to-break gap.
 
-## October 16, 2026 release
+Release verification runs on `main` only:
+[CI run 38941684722](https://github.com/andrewodom18/home-huddle/actions/runs/38941684722).
+Both workflow jobs require `refs/heads/main`, including manual dispatches. GitHub
+did not schedule a push run for this release, so CI and Pages were each manually
+dispatched once against `main`.
+
+## UI and earlier fixes
 
 The app preserves accepted preset edits in later revisions, lets an
 explicit custom-appointment change supersede its old chat history, and keeps
@@ -36,7 +46,7 @@ controls appear without motion so touch targets stay stationary.
 The Terraform module includes both public Function
 URL permissions, restricting `lambda:InvokeFunction` to URL invocations.
 
-The [release CI run](https://github.com/andrewodom18/home-huddle/actions/runs/38934536950)
+The [earlier release CI run](https://github.com/andrewodom18/home-huddle/actions/runs/38934536950)
 passed lint, application/browser/script type checks, **482 unit tests**,
 **186 Chromium/Firefox/WebKit browser tests**, and client/server/Lambda builds.
 One opt-in live unit test and 102 configured viewport cases were skipped.
@@ -55,16 +65,16 @@ The [friction log](friction-log.md) is maintained for the submission.
 
 | Component | Version and evidence | Scope |
 | --- | --- | --- |
-| Application source | [`47b41fe`](https://github.com/andrewodom18/home-huddle/commit/47b41fe06d575dfbcd5b60bbbc89a9278a55117c), [CI run 38934536950](https://github.com/andrewodom18/home-huddle/actions/runs/38934536950) | Includes kit `0.3.3` from [`5ec5e1c`](https://github.com/andrewodom18/conversation-display-kit/commit/5ec5e1c1425c911383769e0080b2e4822b2ab9dd). |
-| Public page | [Pages run 38935567333](https://github.com/andrewodom18/home-huddle/actions/runs/38935567333) from `47b41fe` | Restored blue background, composer glow, hidden page/chat scrollbars, and smooth navigation/following. |
-| Public API | Existing `home-huddle-demo-chat` Lambda, updated from `c600e03` on October 16, 2026 | AWS confirmed code SHA-256 `v5+4KMYDk96YDpfZB+InuiKpgyRNBhAKWcrzMGbEBs0=`. Later release changes only affect frontend packaging and workflows. |
+| Application source | [`501f509`](https://github.com/andrewodom18/home-huddle/commit/501f5096e2b3a44ad3badda07cbec9179f991707), [main CI run 38941684722](https://github.com/andrewodom18/home-huddle/actions/runs/38941684722) | Includes the buffer fix and kit `0.3.3` from [`5ec5e1c`](https://github.com/andrewodom18/conversation-display-kit/commit/5ec5e1c1425c911383769e0080b2e4822b2ab9dd). |
+| Public page | [Pages run 38941687942](https://github.com/andrewodom18/home-huddle/actions/runs/38941687942) from `501f509` | Restored blue background, composer glow, hidden page/chat scrollbars, and smooth navigation/following. |
+| Public API | Existing `home-huddle-demo-chat` Lambda, updated from `501f509` on October 16, 2026 | AWS confirmed code SHA-256 `ZPDI+HV9BVs4Tir0qckJreUboI5flnIdyOV+gBRw6k0=`; the named buffer revision passed the public API smoke with zero model calls. |
 
-A bounded live smoke used three fictional requests and three model calls. Preset
+An earlier live smoke used three fictional requests and three model calls. Preset
 creation passed the local schedule/date validators and CORS checks. A kitchen
 duration edit preserved its accepted requirements without a model call. A later
-feasible buffer request returned a conflict, so that live revision path remains
-unverified. An offline checked schedule demonstrated that the requested buffer
-and accepted edit can coexist; the smoke does not establish broad model quality.
+feasible buffer request returned a conflict, exposing the bug addressed by this
+release. The new public check above verifies that specific revision path; it does
+not establish broad model planning quality.
 
 The client uses React, TypeScript, and the separately maintained Conversation
 Display Kit. The API uses Bedrock Converse with Nova 2 Lite for interpretation
