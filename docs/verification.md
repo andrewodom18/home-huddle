@@ -3,6 +3,26 @@
 Home Huddle's browser and Lambda are released separately. The public demo is a
 web simulation; it does not claim native Alexa+ device integration.
 
+## Local dev buffer fix, October 16, 2026
+
+The named buffer request from the deployment smoke now updates the accepted
+checklist before scheduling. A bounded local timing search can satisfy the gap
+without asking the model to rewrite requirements. It preserves dates, durations,
+assignments, accepted preset edits, fixed commitments, and already-started events.
+Ambiguous names and additional edits do not take this shortcut. If search cannot
+find a valid schedule, the model receives the updated authoritative checklist;
+search exhaustion does not prove infeasibility.
+
+Local verification passed **495 unit tests**, lint, TypeScript checks, and
+client/server/Lambda builds. One opt-in Bedrock test was skipped. A real loopback
+HTTP check applied the kitchen duration edit and then the exact previously failing
+buffer request: both returned checked plans with **zero model calls**, a real
+10-minute gap, and the accepted 30-minute kitchen duration intact. This check
+used fictional data and did not contact Bedrock or the public API.
+
+This fix is local on `dev`; it has not been pushed or deployed. The public
+release and its historical live-smoke result below are unchanged.
+
 ## October 16, 2026 release
 
 The app preserves accepted preset edits in later revisions, lets an
