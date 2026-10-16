@@ -8,17 +8,21 @@ web simulation; it does not claim native Alexa+ device integration.
 The `dev` branch preserves accepted preset edits in later revisions, lets an
 explicit custom-appointment change supersede its old chat history, and keeps
 the share-date confirmation synchronized after an event date move and undo.
-It vendors Conversation Display Kit `0.3.1`, which fixes following rapid
-responses during scrolling. The Terraform module includes both public Function
+It vendors Conversation Display Kit `0.3.2`, which follows rapid responses
+with smooth, interruptible scrolling and honors reduced motion. The original
+blue background and composer glow are restored, and page/chat scrollbars are
+hidden while scrolling remains available. Calendar navigation animates; revision
+controls appear without motion so touch targets stay stationary.
+The Terraform module includes both public Function
 URL permissions, restricting `lambda:InvokeFunction` to URL invocations.
 
 Local checks passed: lint, application/browser/script type checks, **482 unit
-tests**, **140 Chromium/WebKit browser tests** at mobile and desktop sizes,
+tests**, **144 Chromium/WebKit browser tests** at mobile and desktop sizes,
 and client/server/Lambda builds. One opt-in live unit test remains skipped.
 Terraform formatting and validation passed with the pinned AWS provider; the
 packaged Lambda also cold-started and rejected an invalid origin with HTTP 403.
-The kit separately passed 26 unit tests, its Chromium/WebKit browser
-regressions, and React 18/19 package-consumer checks. Firefox could not launch
+The kit separately passed 26 unit tests, 22 Chromium/WebKit browser
+checks, and React 18/19 package-consumer checks. Firefox could not launch
 because of a local profile error; no Firefox result is claimed for these fixes.
 Browser planning responses are fixtures; no new live planning result is claimed.
 
