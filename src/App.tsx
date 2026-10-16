@@ -482,7 +482,7 @@ function PlannerApp() {
     setUndoPlan(plan);
     setUndoDate(calendarDate);
     setPlan(carryEventDetails(proposal, plan));
-    if (proposalDate) setCalendarDate(proposalDate);
+    setCalendarDate(planDates(proposal, calendarDate)[0]);
     setProposal(undefined);
     setProposalDate(undefined);
     setFailure(null);
