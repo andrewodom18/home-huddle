@@ -8,6 +8,8 @@ assignable schedule and supports conversational revisions.
 
 The web app and API are deployed separately. See [verification and deployment
 evidence](docs/verification.md) for the version currently running in the demo.
+The [developer friction log](docs/friction-log.md) records reproducible setup,
+planning, and deployment observations for the hackathon feedback.
 
 Conversation state stays in the browser. The Node API does not persist prompts;
 it sends model-bound planning requests to Amazon Bedrock. The public page runs on
@@ -142,7 +144,7 @@ npm ci
 cp .env.example .env.local
 ```
 
-The lockfile uses the Conversation Display Kit `0.3.0` archive in `vendor/`, so a
+The lockfile uses the Conversation Display Kit `0.3.1` archive in `vendor/`, so a
 standalone checkout can run `npm ci` without a sibling repository or unpublished
 registry version. The archive includes its MIT license; its source is in the
 separate Conversation Display Kit repository.

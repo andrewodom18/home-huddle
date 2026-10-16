@@ -3,6 +3,31 @@
 Home Huddle's browser and Lambda are released separately. The public demo is a
 web simulation; it does not claim native Alexa+ device integration.
 
+## Dev fixes verified October 16, 2026
+
+The `dev` branch preserves accepted preset edits in later revisions, lets an
+explicit custom-appointment change supersede its old chat history, and keeps
+the share-date confirmation synchronized after an event date move and undo.
+It vendors Conversation Display Kit `0.3.1`, which fixes following rapid
+responses during scrolling. The Terraform module includes both public Function
+URL permissions, restricting `lambda:InvokeFunction` to URL invocations.
+
+Local checks passed: lint, application/browser/script type checks, **482 unit
+tests**, **140 Chromium/WebKit browser tests** at mobile and desktop sizes,
+and client/server/Lambda builds. One opt-in live unit test remains skipped.
+Terraform formatting and validation passed with the pinned AWS provider; the
+packaged Lambda also cold-started and rejected an invalid origin with HTTP 403.
+The kit separately passed 26 unit tests, its Chromium/WebKit browser
+regressions, and React 18/19 package-consumer checks. Firefox could not launch
+because of a local profile error; no Firefox result is claimed for these fixes.
+Browser planning responses are fixtures; no new live planning result is claimed.
+
+These changes are on `dev`, pending deployment. They do not change the recorded
+public frontend/API release below. The [friction log](friction-log.md) is restored
+as a maintained document for the submission.
+
+## Recorded public release
+
 | Component | Version and evidence | Scope |
 | --- | --- | --- |
 | Source | [`a80f28b`](https://github.com/andrewodom18/home-huddle/commit/a80f28bfbb1e419a24351529dc63703ac7260bd5), [CI run 37359020500](https://github.com/andrewodom18/home-huddle/actions/runs/37359020500) | Lint, type checks, 476 unit tests, 181 browser tests, builds, and packaged Lambda cold start passed. One opt-in live unit test and 99 configured browser cases were skipped. Browser planning responses are fixtures. |
