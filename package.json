@@ -27,7 +27,7 @@
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.1133.0",
     "@aws-sdk/client-dynamodb": "^3.1133.0",
-    "conversation-display-kit": "file:vendor/conversation-display-kit-0.3.0.tgz",
+    "conversation-display-kit": "file:vendor/conversation-display-kit-0.3.1.tgz",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
     "ics": "3.12.0",
