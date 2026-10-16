@@ -3,9 +3,9 @@
 Home Huddle's browser and Lambda are released separately. The public demo is a
 web simulation; it does not claim native Alexa+ device integration.
 
-## Dev fixes verified October 16, 2026
+## October 16, 2026 release
 
-The `dev` branch preserves accepted preset edits in later revisions, lets an
+The app preserves accepted preset edits in later revisions, lets an
 explicit custom-appointment change supersede its old chat history, and keeps
 the share-date confirmation synchronized after an event date move and undo.
 It vendors Conversation Display Kit `0.3.3`, which follows rapid responses
@@ -16,27 +16,35 @@ controls appear without motion so touch targets stay stationary.
 The Terraform module includes both public Function
 URL permissions, restricting `lambda:InvokeFunction` to URL invocations.
 
-Local checks passed: lint, application/browser/script type checks, **482 unit
-tests**, **144 Chromium/WebKit browser tests** at mobile and desktop sizes,
-and client/server/Lambda builds. One opt-in live unit test remains skipped.
+The [release CI run](https://github.com/andrewodom18/home-huddle/actions/runs/38934536950)
+passed lint, application/browser/script type checks, **482 unit tests**,
+**186 Chromium/Firefox/WebKit browser tests**, and client/server/Lambda builds.
+One opt-in live unit test and 102 configured viewport cases were skipped.
 Terraform formatting and validation passed with the pinned AWS provider; the
 packaged Lambda also cold-started and rejected an invalid origin with HTTP 403.
-The kit separately passed 26 unit tests, 22 Chromium/WebKit browser
-checks, and React 18/19 package-consumer checks. Firefox could not launch
-because of a local profile error; no Firefox result is claimed for these fixes.
-Browser planning responses are fixtures; no new live planning result is claimed.
+The kit's [Linux CI run](https://github.com/andrewodom18/conversation-display-kit/actions/runs/38934376052)
+passed **29 unit tests**, **33 Chromium/Firefox/WebKit browser checks**, and
+React 18/19 package-consumer checks. Its wheel interruption fix preserves native
+scrolling outside an active animation and leaves Ctrl+wheel zoom available.
+Browser planning responses are fixtures.
 
-These changes are on `dev`, pending deployment. They do not change the recorded
-public frontend/API release below. The [friction log](friction-log.md) is restored
-as a maintained document for the submission.
+Both repositories have matching `main` and `dev` branches for this release.
+The [friction log](friction-log.md) is maintained for the submission.
 
 ## Recorded public release
 
 | Component | Version and evidence | Scope |
 | --- | --- | --- |
-| Source | [`a80f28b`](https://github.com/andrewodom18/home-huddle/commit/a80f28bfbb1e419a24351529dc63703ac7260bd5), [CI run 37359020500](https://github.com/andrewodom18/home-huddle/actions/runs/37359020500) | Lint, type checks, 476 unit tests, 181 browser tests, builds, and packaged Lambda cold start passed. One opt-in live unit test and 99 configured browser cases were skipped. Browser planning responses are fixtures. |
-| Public page | [Pages run 37359024167](https://github.com/andrewodom18/home-huddle/actions/runs/37359024167) from `a80f28b` | The served frontend bundle contains the mobile review-scroll fix. |
-| Public API | Existing `home-huddle-demo-chat` Lambda, updated from `a80f28b` on October 5, 2026 | AWS reported a successful code update. A fictional ambiguous-time request returned a focused AM/PM clarification without a model call. |
+| Application source | [`47b41fe`](https://github.com/andrewodom18/home-huddle/commit/47b41fe06d575dfbcd5b60bbbc89a9278a55117c), [CI run 38934536950](https://github.com/andrewodom18/home-huddle/actions/runs/38934536950) | Includes kit `0.3.3` from [`5ec5e1c`](https://github.com/andrewodom18/conversation-display-kit/commit/5ec5e1c1425c911383769e0080b2e4822b2ab9dd). |
+| Public page | [Pages run 38935567333](https://github.com/andrewodom18/home-huddle/actions/runs/38935567333) from `47b41fe` | Restored blue background, composer glow, hidden page/chat scrollbars, and smooth navigation/following. |
+| Public API | Existing `home-huddle-demo-chat` Lambda, updated from `c600e03` on October 16, 2026 | AWS confirmed code SHA-256 `v5+4KMYDk96YDpfZB+InuiKpgyRNBhAKWcrzMGbEBs0=`. Later release changes only affect frontend packaging and workflows. |
+
+A bounded live smoke used three fictional requests and three model calls. Preset
+creation passed the local schedule/date validators and CORS checks. A kitchen
+duration edit preserved its accepted requirements without a model call. A later
+feasible buffer request returned a conflict, so that live revision path remains
+unverified. An offline checked schedule demonstrated that the requested buffer
+and accepted edit can coexist; the smoke does not establish broad model quality.
 
 The client uses React, TypeScript, and the separately maintained Conversation
 Display Kit. The API uses Bedrock Converse with Nova 2 Lite for interpretation
