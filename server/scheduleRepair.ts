@@ -1,4 +1,5 @@
 import type { ChatRequest, PlanDraft, PlanRequirements } from "../shared/contracts";
+import { isDeepStrictEqual } from "node:util";
 import { localNow, pastScheduleIssues } from "./pastSchedule";
 import { requirementsIssues } from "./requirements";
 import { assignedPeople, minutes, scheduleIssues } from "./scheduleValidation";
@@ -19,6 +20,33 @@ export function repairScheduleTiming(
   if (request.currentPlan || draft.items.length > 20 || requirementsIssues(requirements, draft.participants).length) return draft;
   const originalIssues = scheduleIssues(draft, request, requirements);
   if (!originalIssues.some((issue) => /overlap for|simultaneous use exceeds/.test(issue))) return draft;
+  return searchScheduleTiming(draft, request, requirements, instant, budget, false);
+}
+
+/** A trusted additive gap may move times, but cannot rewrite accepted activities. */
+export function repairGapRevisionTiming(
+  draft: PlanDraft, request: RequestContext, requirements: PlanRequirements,
+  instant: Date, budget: Budget = {},
+): PlanDraft {
+  const current = request.currentPlan;
+  if (!current?.requirements || draft.items.length > 20 || requirementsIssues(requirements, draft.participants).length) return draft;
+  const { source: oldSource, gaps: oldGaps, ...oldRules } = current.requirements;
+  const { source: newSource, gaps: newGaps, ...newRules } = requirements;
+  void oldSource; void newSource;
+  if (!isDeepStrictEqual(oldRules, newRules)
+    || !isDeepStrictEqual(draft.items, current.items)
+    || !isDeepStrictEqual(draft.participants, current.participants)
+    || (oldGaps ?? []).some((gap) => !(newGaps ?? []).some((next) => next.afterTaskId === gap.afterTaskId && next.beforeTaskId === gap.beforeTaskId && next.minMinutes >= gap.minMinutes))) return draft;
+  const baseline = { ...request, message: "", history: [] };
+  if (scheduleIssues(current, baseline, current.requirements).length || pastScheduleIssues(current, baseline, instant).length) return draft;
+  if (!scheduleIssues(draft, request, requirements).some((issue) => /^Leave \d+ minutes between/.test(issue))) return draft;
+  return searchScheduleTiming(draft, request, requirements, instant, budget, true);
+}
+
+function searchScheduleTiming(
+  draft: PlanDraft, request: RequestContext, requirements: PlanRequirements,
+  instant: Date, budget: Budget, preserveStarts: boolean,
+): PlanDraft {
   const started = performance.now();
   const maxAttempts = Math.min(Math.max(budget.maxAttempts ?? 20_000, 0), 20_000);
   const maxMilliseconds = Math.min(Math.max(budget.maxMilliseconds ?? 150, 0), 150);
@@ -29,14 +57,17 @@ export function repairScheduleTiming(
     const rule = indexedRules.get(item.taskId ?? "");
     const date = item.date ?? request.planDate;
     const people = assignedPeople(item.assignee, draft.participants);
-    if (!rule || !date || date < current.date || rule.date && rule.date !== date || item.durationMinutes !== rule.durationMinutes || minutes(item.startTime) === undefined || !people.length) return undefined;
+    const originalStart = minutes(item.startTime);
+    const historical = preserveStarts && date && originalStart !== undefined
+      && (date < current.date || date === current.date && originalStart < current.minute);
+    if (!rule || !date || date < current.date && !historical || rule.date && rule.date !== date || item.durationMinutes !== rule.durationMinutes || originalStart === undefined || !people.length) return undefined;
     const has = (person: string) => people.some((name) => name.toLowerCase() === person.toLowerCase());
     if (rule.requiredParticipants?.some((person) => !has(person)) || rule.atLeastOneOf?.length && !rule.atLeastOneOf.some(has)) return undefined;
     if (people.some((person) => rule.allowedParticipants && !rule.allowedParticipants.some((name) => name.toLowerCase() === person.toLowerCase()) || rule.forbiddenParticipants?.some((name) => name.toLowerCase() === person.toLowerCase()))) return undefined;
     const window = requirements.timeWindows?.find((window) => window.date === date) ?? requirements.timeWindow;
-    const low = Math.max(minutes(window.startTime)!, rule.earliestStartTime ? minutes(rule.earliestStartTime)! : 0, date === current.date ? Math.ceil(current.minute) : 0);
-    const high = Math.min(minutes(window.endTime)!, rule.latestEndTime ? minutes(rule.latestEndTime)! : 1440) - item.durationMinutes;
-    const fixed = rule.fixedStartTime ? minutes(rule.fixedStartTime) : undefined;
+    const low = historical ? originalStart : Math.max(minutes(window.startTime)!, rule.earliestStartTime ? minutes(rule.earliestStartTime)! : 0, date === current.date ? Math.ceil(current.minute) : 0);
+    const high = historical ? originalStart : Math.min(minutes(window.endTime)!, rule.latestEndTime ? minutes(rule.latestEndTime)! : 1440) - item.durationMinutes;
+    const fixed = historical ? originalStart : rule.fixedStartTime ? minutes(rule.fixedStartTime) : undefined;
     if (low > high || fixed !== undefined && (fixed < low || fixed > high)) return undefined;
     const availability = people.map((person) => {
       const all = (requirements.availability ?? []).filter((window) => window.participant.toLowerCase() === person.toLowerCase());
@@ -115,7 +146,15 @@ export function repairScheduleTiming(
     const task = ready[0];
     if (!task) return false;
     const [low, high] = bounds(task.index);
-    for (let start = task.fixed ?? low; start <= (task.fixed ?? high); start += 1) {
+    function* starts() {
+      if (task.fixed !== undefined) { yield task.fixed; return; }
+      const previous = minutes(task.item.startTime)!;
+      if (preserveStarts && previous >= low && previous <= high) yield previous;
+      for (let start = low; start <= high; start += 1) {
+        if (!preserveStarts || start !== previous) yield start;
+      }
+    }
+    for (const start of starts()) {
       if (expired()) return false;
       attempts += 1;
       if (start < low || start > high || !fits(task.index, start)) continue;

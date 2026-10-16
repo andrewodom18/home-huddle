@@ -186,7 +186,7 @@ export function scheduleIssues(
     if (!match) issues.push(`Keep ${fixedCall[1]}'s call at ${fixedCall[2]} for the full fixed duration`);
   }
   const buffer = /\badd a (\d{1,2})-minute transition buffer\b/i.exec(request.message);
-  if (buffer) {
+  if (buffer && !requirements?.gaps?.some((gap) => gap.minMinutes >= Number(buffer[1]))) {
     const needed = Number(buffer[1]);
     const hasGap = draft.participants.some((person) => {
       const ordered = slots.filter((slot) => slot.start !== undefined && slot.people.includes(person)).sort((a, b) => absoluteMinutes(a.date, a.start!) - absoluteMinutes(b.date, b.start!));

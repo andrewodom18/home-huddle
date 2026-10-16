@@ -92,7 +92,13 @@ earlier where the same validator still accepts them, without another Bedrock
 call. It preserves each person's task order, fixed times, and captured
 dependencies and gaps; it does not claim a mathematically optimal schedule or
 verify constraints the model did not capture from free text. Revisions are not
-automatically retimed so requested changes remain under the user's control.
+automatically compacted. A clear request such as “Add a 10-minute transition
+buffer after Sort and start laundry and before Shared break” updates the accepted
+gap requirement directly. A bounded local check preserves the existing times
+where possible and retimes activities only if needed to satisfy the buffer,
+without changing dates, assignments, durations, fixed times, or started events.
+If it cannot find a checked schedule, the model receives the updated requirements;
+search exhaustion alone does not establish a conflict.
 
 The model can answer without invoking the planning tool, but that answer still
 uses one Bedrock Converse call and one unit of the shared call quota. The web
