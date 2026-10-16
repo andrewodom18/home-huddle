@@ -174,9 +174,11 @@ export function scheduleIssues(
     }
   }
 
-  // Literal checks catch common requests even when the interpreted checklist omits them.
+  // Literal checks catch omissions while creating a plan. On revisions, the
+  // server-owned checklist is authoritative: history can contain a fixed call
+  // that the user has since explicitly moved or cancelled.
   const userText = [...request.history.filter((entry) => entry.role === "user").map((entry) => entry.text), request.message].join(" ");
-  const fixedCall = /\b([A-Za-z]+) has a fixed call from (\d{1,2}:\d{2}\s*[AP]M) to (\d{1,2}:\d{2}\s*[AP]M)/i.exec(userText);
+  const fixedCall = !request.currentPlan && /\b([A-Za-z]+) has a fixed call from (\d{1,2}:\d{2}\s*[AP]M) to (\d{1,2}:\d{2}\s*[AP]M)/i.exec(userText);
   if (fixedCall) {
     const expectedStart = minutes(fixedCall[2]);
     const expectedEnd = minutes(fixedCall[3]);

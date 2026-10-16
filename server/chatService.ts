@@ -148,9 +148,10 @@ function scenarioEditIssues(canonical: PlanRequirements, plan: HouseholdPlan): s
 }
 
 function canonicalWithScenarioEdits(canonical: PlanRequirements, edits: ScenarioEdits): PlanRequirements {
+  // This is a validation baseline. Apply accepted editable defaults while
+  // retaining the preset's protection against unrelated checklist corrections.
   return {
     ...canonical,
-    source: Object.keys(edits).length ? "interpreted" : canonical.source,
     tasks: canonical.tasks.map((task) => {
       const edit = edits[task.id];
       if (!edit) return task;
@@ -694,7 +695,7 @@ export function createChatService(
         conflicts.push(...participantIssues);
         if (parsed.success && request.currentPlan && !isDeepStrictEqual([...parsed.data.participants].map((person) => person.toLowerCase()).sort(), [...request.currentPlan.participants].map((person) => person.toLowerCase()).sort())) conflicts.push("Keep the established participants for a revision");
         if (parsed.success && sameScenario && canonical && proposed && !requestedRevision) {
-          conflicts.push(...requirementIssues(canonical, proposed, request.message, requestedRevision, true));
+          conflicts.push(...requirementIssues(canonicalWithScenarioEdits(canonical, acceptedScenarioEdits ?? {}), proposed, request.message, requestedRevision, true));
         }
         if (parsed.success && requestedRevision && request.currentPlan) {
           const samePeople = isDeepStrictEqual(
