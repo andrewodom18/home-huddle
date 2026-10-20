@@ -163,6 +163,22 @@ resource "aws_lambda_function_url" "chat" {
   }
 }
 
+resource "aws_lambda_permission" "public_function_url" {
+  statement_id           = "AllowPublicFunctionUrl"
+  action                 = "lambda:InvokeFunctionUrl"
+  function_name          = aws_lambda_function.chat.function_name
+  principal              = "*"
+  function_url_auth_type = aws_lambda_function_url.chat.authorization_type
+}
+
+resource "aws_lambda_permission" "public_url_invocation" {
+  statement_id             = "AllowPublicInvocationViaFunctionUrl"
+  action                   = "lambda:InvokeFunction"
+  function_name            = aws_lambda_function.chat.function_name
+  principal                = "*"
+  invoked_via_function_url = true
+}
+
 resource "aws_budgets_budget" "demo" {
   name         = "home-huddle-serverless-monthly"
   budget_type  = "COST"

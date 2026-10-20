@@ -7,12 +7,22 @@
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: auto; }
+html { scroll-behavior: smooth; }
 body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background: #20252b;
+  background:
+    radial-gradient(ellipse 62% 52% at 50% -11%, rgba(39, 74, 125, .65), transparent 75%),
+    radial-gradient(ellipse 35% 30% at 96% 8%, rgba(34, 68, 108, .28), transparent 90%),
+    #182129;
+}
+/* Keep page and conversation scrolling available without visible chrome. */
+:where(html, body, .home-huddle-conversation .cdk-conversation__messages, .home-huddle-conversation .cdk-composer textarea) {
+  scrollbar-width: none;
+}
+:where(html, body, .home-huddle-conversation .cdk-conversation__messages, .home-huddle-conversation .cdk-composer textarea)::-webkit-scrollbar {
+  display: none;
 }
 button, input { font: inherit; }
 button { -webkit-tap-highlight-color: transparent; }
@@ -98,7 +108,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visibl
   border: 1px solid rgba(213, 231, 250, .11);
   border-radius: 32px;
   background: #454c55;
-  box-shadow: none;
+  box-shadow: 0 18px 35px rgba(4, 10, 20, .14);
 }
 .side-rail a {
   display: grid;
@@ -204,7 +214,8 @@ main { flex: 1; width: 100%; }
   border: 1px solid rgba(178, 204, 232, .24);
   border-radius: 999px;
   background: #3c424b;
-  box-shadow: none;
+  box-shadow: 0 0 0 5px rgba(66, 119, 194, .09), 0 0 38px rgba(49, 112, 212, .28);
+  transition: box-shadow .18s ease, border-color .18s ease;
 }
 .home-huddle-conversation--welcome .cdk-composer::before {
   content: "✦";
@@ -241,6 +252,7 @@ main { flex: 1; width: 100%; }
   border-color: transparent;
   outline: 2px solid #83d6ff;
   outline-offset: 0;
+  box-shadow: 0 0 0 5px rgba(66, 119, 194, .13), 0 0 44px rgba(49, 112, 212, .42);
 }
 .mic-button {
   width: 42px;
@@ -323,7 +335,8 @@ main { flex: 1; width: 100%; }
   border: 1px solid rgba(178, 204, 232, .24);
   border-radius: 999px;
   background: #3c424b;
-  box-shadow: none;
+  box-shadow: 0 0 0 5px rgba(66, 119, 194, .09), 0 0 38px rgba(49, 112, 212, .28);
+  transition: box-shadow .18s ease, border-color .18s ease;
 }
 .home-huddle-conversation--active .cdk-composer::before {
   content: "✦";
@@ -345,6 +358,7 @@ main { flex: 1; width: 100%; }
   border-color: transparent;
   outline: 2px solid #83d6ff;
   outline-offset: 0;
+  box-shadow: 0 0 0 5px rgba(66, 119, 194, .13), 0 0 44px rgba(49, 112, 212, .42);
 }
 .scenario-section { width: min(560px, 100%); margin-top: 14px; }
 .scenario-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 9px; }

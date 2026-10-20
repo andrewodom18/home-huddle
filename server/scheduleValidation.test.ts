@@ -39,6 +39,18 @@ describe("scheduleIssues", () => {
     );
   });
 
+  it("still enforces the saved checklist's fixed call time during a revision", () => {
+    const requirements: PlanRequirements = {
+      source: "interpreted", timeWindow: { startTime: "5:00 PM", endTime: "8:00 PM" },
+      tasks: [{ id: "call", label: "Jordan's call", durationMinutes: 20, requiredParticipants: ["Jordan"], fixedStartTime: "6:30 PM" }],
+    };
+    const original: PlanDraft = { ...draft, requirements, items: [{ taskId: "call", task: "Jordan's call", startTime: "6:30 PM", durationMinutes: 20, assignee: "Jordan" }] };
+    const currentPlan: HouseholdPlan = { ...original, items: original.items.map((item) => ({ ...item, id: "task-call" })), version: 1, updatedAt: "2026-09-18T12:00:00Z" };
+    const changed = { ...original, items: original.items.map((item) => ({ ...item, startTime: "7:00 PM" })) };
+
+    expect(scheduleIssues(changed, { ...request, message: "Review the timing", currentPlan })).toEqual(["Jordan's call: keep the fixed start at 6:30 PM"]);
+  });
+
   it("finds a participant's buffer even with parallel work during the gap", () => {
     const changed = {
       ...draft,

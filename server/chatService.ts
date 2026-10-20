@@ -20,7 +20,8 @@ import {
 } from "./bedrock";
 import { applyRequirementChanges, explicitAvailabilityChanges, fixedCommitmentConflict, naturalChangeIssues, requirementsIssues } from "./requirements";
 import { AppError } from "./errors";
-import { repairScheduleTiming } from "./scheduleRepair";
+import { repairGapRevisionTiming, repairScheduleTiming } from "./scheduleRepair";
+import { explicitGapRequirements } from "./gapRevision";
 import { orderingCaptureIssues, resourceCaptureIssues } from "./captureValidation";
 import { shortenSchedule } from "./scheduleOptimization";
 import { assignedPeople, minutes, scheduleIssues } from "./scheduleValidation";
@@ -148,9 +149,10 @@ function scenarioEditIssues(canonical: PlanRequirements, plan: HouseholdPlan): s
 }
 
 function canonicalWithScenarioEdits(canonical: PlanRequirements, edits: ScenarioEdits): PlanRequirements {
+  // This is a validation baseline. Apply accepted editable defaults while
+  // retaining the preset's protection against unrelated checklist corrections.
   return {
     ...canonical,
-    source: Object.keys(edits).length ? "interpreted" : canonical.source,
     tasks: canonical.tasks.map((task) => {
       const edit = edits[task.id];
       if (!edit) return task;
@@ -397,10 +399,19 @@ export function createChatService(
     let requiredContext = sameScenario ? priorRequirements : canonical ?? priorRequirements;
     let captured: ReturnType<typeof interpretedPlanSchema.parse> | undefined;
     let authoritativeChanges = false;
+    let namedGapRevision = false;
     if (request.changes) {
       if (!request.currentPlan) throw new AppError("VALIDATION", "Create a plan before changing its requirements.", { status: 400 });
       try { requiredContext = applyRequirementChanges(request.currentPlan, request.changes); authoritativeChanges = true; }
       catch (error) { throw new AppError("VALIDATION", error instanceof Error ? error.message : "Invalid requirement changes.", { status: 400 }); }
+    }
+    if (request.currentPlan && !request.edit && !request.changes) {
+      const gapRequirements = explicitGapRequirements(request.currentPlan, request.message);
+      if (gapRequirements) {
+        requiredContext = gapRequirements;
+        authoritativeChanges = true;
+        namedGapRevision = true;
+      }
     }
     if (request.currentPlan && !canonical && !request.edit && !request.changes) {
       const availabilityChanges = explicitAvailabilityChanges(request.currentPlan, request.message);
@@ -477,6 +488,18 @@ export function createChatService(
           provider: "Home Huddle", modelId: "Deterministic schedule edit", toolUsed: false,
           latencyMs: Math.round(performance.now() - startedAt), callCount: 0,
         },
+      };
+    }
+
+    if (namedGapRevision && request.currentPlan && requiredContext) {
+      const completionInstant = now();
+      const draft: PlanDraft = { ...request.currentPlan, notes: [], requirements: requiredContext };
+      const schedule = repairGapRevisionTiming(draft, request, requiredContext, completionInstant);
+      const plan = publishPlan(schedule, requiredContext, request.currentPlan, scenarioId, request.planDate, () => completionInstant, undefined, acceptedScenarioEdits);
+      if (!scheduleIssues(plan, request, requiredContext).length && !pastScheduleIssues(plan, request, completionInstant).length) return {
+        reply: "Here is a checked schedule change with the requested buffer.",
+        outcome: "plan", plan,
+        meta: { provider: "Home Huddle", modelId: "Deterministic buffer revision", toolUsed: false, latencyMs: Math.round(performance.now() - startedAt), callCount: 0 },
       };
     }
 
@@ -642,7 +665,7 @@ export function createChatService(
         let requirements = captured || authoritativeChanges ? requiredContext : canonical && !sameScenario ? canonical : proposed ?? requiredContext;
         if (requiredContext && request.currentPlan && !requestedRevision && !authoritativeChanges && !/^Correct (?:requirement|time window)\b/i.test(request.message) && !/\b(?:gap|buffer|transition)\b/i.test(request.message)) requirements = requiredContext;
         const participantIssues = parsed.success && captured && !isDeepStrictEqual(parsed.data.participants, captured.participants) ? ["Keep the participants from the captured request"] : [];
-        if (sameScenario && proposed && requiredContext) {
+        if (sameScenario && proposed && requiredContext && !authoritativeChanges) {
           // A model may relabel an unchanged preset checklist as interpreted.
           // An exact, checked event-date move is still a verified preset
           // checklist; only genuinely additive constraints become interpreted.
@@ -694,7 +717,7 @@ export function createChatService(
         conflicts.push(...participantIssues);
         if (parsed.success && request.currentPlan && !isDeepStrictEqual([...parsed.data.participants].map((person) => person.toLowerCase()).sort(), [...request.currentPlan.participants].map((person) => person.toLowerCase()).sort())) conflicts.push("Keep the established participants for a revision");
         if (parsed.success && sameScenario && canonical && proposed && !requestedRevision) {
-          conflicts.push(...requirementIssues(canonical, proposed, request.message, requestedRevision, true));
+          conflicts.push(...requirementIssues(canonicalWithScenarioEdits(canonical, acceptedScenarioEdits ?? {}), proposed, request.message, requestedRevision, true));
         }
         if (parsed.success && requestedRevision && request.currentPlan) {
           const samePeople = isDeepStrictEqual(

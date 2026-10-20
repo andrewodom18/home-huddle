@@ -174,9 +174,11 @@ export function scheduleIssues(
     }
   }
 
-  // Literal checks catch common requests even when the interpreted checklist omits them.
+  // Literal checks catch omissions while creating a plan. On revisions, the
+  // server-owned checklist is authoritative: history can contain a fixed call
+  // that the user has since explicitly moved or cancelled.
   const userText = [...request.history.filter((entry) => entry.role === "user").map((entry) => entry.text), request.message].join(" ");
-  const fixedCall = /\b([A-Za-z]+) has a fixed call from (\d{1,2}:\d{2}\s*[AP]M) to (\d{1,2}:\d{2}\s*[AP]M)/i.exec(userText);
+  const fixedCall = !request.currentPlan && /\b([A-Za-z]+) has a fixed call from (\d{1,2}:\d{2}\s*[AP]M) to (\d{1,2}:\d{2}\s*[AP]M)/i.exec(userText);
   if (fixedCall) {
     const expectedStart = minutes(fixedCall[2]);
     const expectedEnd = minutes(fixedCall[3]);
@@ -184,7 +186,7 @@ export function scheduleIssues(
     if (!match) issues.push(`Keep ${fixedCall[1]}'s call at ${fixedCall[2]} for the full fixed duration`);
   }
   const buffer = /\badd a (\d{1,2})-minute transition buffer\b/i.exec(request.message);
-  if (buffer) {
+  if (buffer && !requirements?.gaps?.some((gap) => gap.minMinutes >= Number(buffer[1]))) {
     const needed = Number(buffer[1]);
     const hasGap = draft.participants.some((person) => {
       const ordered = slots.filter((slot) => slot.start !== undefined && slot.people.includes(person)).sort((a, b) => absoluteMinutes(a.date, a.start!) - absoluteMinutes(b.date, b.start!));

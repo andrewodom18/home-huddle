@@ -21,8 +21,8 @@ before deployment.
 
 ## Prerequisites
 
-- Public Home Huddle and Conversation Display Kit repositories, with the
-  `v0.2.0` kit asset anonymously installable.
+- Public Home Huddle and Conversation Display Kit repositories. The kit package
+  used by Home Huddle is included in `vendor/`; no registry release is required.
 - An approved AWS SSO/profile session with Lambda, DynamoDB, IAM, CloudWatch
   Logs, Bedrock, and Budgets permissions. Never place AWS credentials in Git,
   GitHub Actions, or the browser.
@@ -53,7 +53,10 @@ terraform -chdir=deploy/serverless output -raw chat_url
 ```
 
 Review the plan before applying. Terraform creates a public URL with
-`authorization_type=NONE` and a CORS allowlist for the page origin. Browser
+`authorization_type=NONE`, the two resource-policy permissions required for
+public Function URL invocation, and a CORS allowlist for the page origin. The
+`lambda:InvokeFunction` grant is restricted to invocation through the Function
+URL; it does not permit direct public Lambda invocations. Browser
 CORS and the app's Origin check reduce cross-site use; they are not
 authentication. DynamoDB's conditional transaction is the Bedrock cost cap.
 The separate share table stores immutable seven-day plan snapshots under a

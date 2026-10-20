@@ -929,6 +929,81 @@ describe("createChatService", () => {
     expect(gateway.converse).toHaveBeenCalledTimes(2);
   });
 
+  it.each(["duration", "assignee"] as const)("preserves an accepted preset %s edit when adding a conversational buffer", async (field) => {
+    const currentPlan = publishedChores();
+    const gateway = mockGateway([]);
+    const chat = createChatService({ gateway, logger: vi.fn() });
+    const accepted = await chat({
+      message: field === "duration" ? "Make kitchen 30 minutes" : "Assign kitchen to Sam",
+      history: [], currentPlan, planDate: "2026-09-19",
+      edit: field === "duration" ? { taskId: "kitchen", durationMinutes: 30 } : { taskId: "kitchen", assignees: ["Sam"] },
+    });
+    const next = choresRevision(accepted.plan!, {});
+    next.requirements = {
+      ...accepted.plan!.requirements!,
+      gaps: [{ afterTaskId: "start-laundry", beforeTaskId: "shared-break", minMinutes: 10 }],
+    };
+    gateway.converse.mockResolvedValue(response([{ toolUse: { toolUseId: "buffer", name: "publish_household_plan", input: next } }], "tool_use"));
+
+    const result = await chat({ message: "Add a 10-minute transition buffer", history: [], currentPlan: accepted.plan, planDate: "2026-09-19" });
+
+    expect(result.plan?.scenarioEdits).toEqual(accepted.plan?.scenarioEdits);
+    expect(result.plan?.requirements?.tasks).toEqual(accepted.plan?.requirements?.tasks);
+    expect(result.plan?.requirements?.gaps).toEqual(next.requirements.gaps);
+    expect(gateway.converse).toHaveBeenCalledTimes(1);
+  });
+
+  it("allows a custom fixed call's explicit time change despite its original chat history", async () => {
+    const currentPlan = publishedDraft();
+    currentPlan.items[0] = { ...currentPlan.items[0], task: "Jordan's call", startTime: "6:30 PM", durationMinutes: 20 };
+    currentPlan.requirements!.tasks[0] = { ...currentPlan.requirements!.tasks[0], label: "Jordan's call", durationMinutes: 20, fixedStartTime: "6:30 PM" };
+    const history = [{ role: "user" as const, text: "Jordan has a fixed call from 6:30 PM to 6:50 PM." }];
+    const gateway = mockGateway([]);
+    const chat = createChatService({ gateway, logger: vi.fn() });
+
+    const result = await chat({ message: "Move Jordan's call to 7:00 PM", currentPlan, history, edit: { taskId: "dinner", startTime: "7:00 PM" } });
+
+    expect(result.plan?.items[0].startTime).toBe("7:00 PM");
+    expect(result.plan?.requirements?.tasks[0].fixedStartTime).toBe("7:00 PM");
+    expect(result.meta.callCount).toBe(0);
+    expect(gateway.converse).not.toHaveBeenCalled();
+  });
+
+  it("retains a preset's accepted duration and date across later revisions", async () => {
+    const currentPlan: HouseholdPlan = {
+      ...weekdayDraft, scenarioId: "weekday", requirements: SCENARIO_REQUIREMENTS.weekday,
+      items: weekdayDraft.items.map((item) => ({ ...item, id: `task-${item.taskId}` })),
+      version: 1, updatedAt: "2026-09-18T12:00:00.000Z",
+    };
+    const gateway = mockGateway([]);
+    const chat = createChatService({ gateway, logger: vi.fn() });
+    const shorter = await chat({ message: "Make Monday dinner 25 minutes", currentPlan, history: [], edit: { taskId: "dinner-21", durationMinutes: 25 } });
+    const moved = await chat({ message: "Move Monday dinner to Saturday", currentPlan: shorter.plan, history: [], edit: { taskId: "dinner-21", date: "2026-09-26" } });
+    const next = choresRevision(moved.plan!, {});
+    gateway.converse.mockResolvedValue(response([{ toolUse: { toolUseId: "review", name: "publish_household_plan", input: next } }], "tool_use"));
+
+    const result = await chat({ message: "Review the timing", currentPlan: moved.plan, history: [] });
+
+    expect(result.plan?.items.find((item) => item.taskId === "dinner-21")).toMatchObject({ date: "2026-09-26", durationMinutes: 25 });
+    expect(result.plan?.scenarioEdits).toEqual(shorter.plan?.scenarioEdits);
+    expect(gateway.converse).toHaveBeenCalledTimes(1);
+  });
+
+  it("allows explicitly cancelling a custom fixed call despite its original chat history", async () => {
+    const currentPlan = publishedDraft();
+    currentPlan.items[0] = { ...currentPlan.items[0], task: "Jordan's call", startTime: "6:30 PM", durationMinutes: 20 };
+    currentPlan.requirements!.tasks[0] = { ...currentPlan.requirements!.tasks[0], label: "Jordan's call", durationMinutes: 20, fixedStartTime: "6:30 PM" };
+    const next: PlanDraft = { ...draft, items: [draft.items[1]], requirements: { ...draft.requirements!, tasks: [draft.requirements!.tasks[1]] } };
+    const gateway = mockGateway([response([{ toolUse: { toolUseId: "cancel", name: "publish_household_plan", input: next } }], "tool_use")]);
+    const result = await createChatService({ gateway, logger: vi.fn() })({
+      message: "Cancel Jordan's call", currentPlan,
+      history: [{ role: "user", text: "Jordan has a fixed call from 6:30 PM to 6:50 PM." }],
+      changes: [{ kind: "remove_task", taskId: "dinner" }],
+    });
+    expect(result.plan?.items.map((item) => item.taskId)).toEqual(["math"]);
+    expect(gateway.converse).toHaveBeenCalledTimes(1);
+  });
+
   it("accepts a flexible preset duration and carries its customized checklist into later revisions", async () => {
     const currentPlan = publishedChores();
     const first = choresRevision(currentPlan, { kitchen: { durationMinutes: 30 } });

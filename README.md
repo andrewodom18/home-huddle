@@ -8,6 +8,8 @@ assignable schedule and supports conversational revisions.
 
 The web app and API are deployed separately. See [verification and deployment
 evidence](docs/verification.md) for the version currently running in the demo.
+The [developer friction log](docs/friction-log.md) records reproducible setup,
+planning, and deployment observations for the hackathon feedback.
 
 Conversation state stays in the browser. The Node API does not persist prompts;
 it sends model-bound planning requests to Amazon Bedrock. The public page runs on
@@ -90,7 +92,13 @@ earlier where the same validator still accepts them, without another Bedrock
 call. It preserves each person's task order, fixed times, and captured
 dependencies and gaps; it does not claim a mathematically optimal schedule or
 verify constraints the model did not capture from free text. Revisions are not
-automatically retimed so requested changes remain under the user's control.
+automatically compacted. A clear request such as “Add a 10-minute transition
+buffer after Sort and start laundry and before Shared break” updates the accepted
+gap requirement directly. A bounded local check preserves the existing times
+where possible and retimes activities only if needed to satisfy the buffer,
+without changing dates, assignments, durations, fixed times, or started events.
+If it cannot find a checked schedule, the model receives the updated requirements;
+search exhaustion alone does not establish a conflict.
 
 The model can answer without invoking the planning tool, but that answer still
 uses one Bedrock Converse call and one unit of the shared call quota. The web
@@ -142,7 +150,7 @@ npm ci
 cp .env.example .env.local
 ```
 
-The lockfile uses the Conversation Display Kit `0.3.0` archive in `vendor/`, so a
+The lockfile uses the Conversation Display Kit `0.3.3` archive in `vendor/`, so a
 standalone checkout can run `npm ci` without a sibling repository or unpublished
 registry version. The archive includes its MIT license; its source is in the
 separate Conversation Display Kit repository.

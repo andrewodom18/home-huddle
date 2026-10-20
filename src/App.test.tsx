@@ -461,7 +461,7 @@ describe("Home Huddle", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("sends an event-specific date revision to the planner instead of moving the whole plan", async () => {
+  it("keeps the share date synchronized when applying, reloading, and undoing an event-specific date revision", async () => {
     const datedPlan: HouseholdPlan = {
       ...plan,
       items: [{ ...plan.items[0], taskId: "dinner", date: "2026-09-19" }],
@@ -476,13 +476,31 @@ describe("Home Huddle", () => {
     const fetchMock = vi.fn<typeof fetch>(async () => jsonResponse({ ...success, plan: revisedPlan }));
     vi.stubGlobal("fetch", fetchMock);
     const user = userEvent.setup();
-    render(<App />);
+    const first = render(<App />);
 
     await user.type(screen.getByRole("textbox", { name: "Message" }), "Move dinner to October 13, 2026{Enter}");
     await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
     expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body)).message).toBe("Move dinner to October 13, 2026");
     expect(await screen.findByRole("region", { name: "Proposed revision" })).toHaveTextContent("2026-10-13");
     expect(screen.getByLabelText("Plan date")).toHaveValue("2026-09-19");
+
+    await user.click(screen.getByRole("button", { name: "Apply" }));
+    await user.click(screen.getByText("Share or export this plan"));
+    expect(screen.getByLabelText("Plan date")).toHaveValue("2026-10-13");
+    expect(screen.getByLabelText("Date", { exact: true })).toHaveValue("2026-10-13");
+    expect(JSON.parse(window.localStorage.getItem("home-huddle-state-v2") ?? "{}").calendarDate).toBe("2026-10-13");
+
+    first.unmount();
+    render(<App />);
+    await user.click(screen.getByText("Share or export this plan"));
+    expect(screen.getByLabelText("Plan date")).toHaveValue("2026-10-13");
+    expect(screen.getByLabelText("Date", { exact: true })).toHaveValue("2026-10-13");
+
+    await user.click(screen.getByRole("button", { name: "Undo accepted revision" }));
+    await user.click(screen.getByText("Share or export this plan"));
+    expect(screen.getByLabelText("Plan date")).toHaveValue("2026-09-19");
+    expect(screen.getByLabelText("Date", { exact: true })).toHaveValue("2026-09-19");
+    expect(JSON.parse(window.localStorage.getItem("home-huddle-state-v2") ?? "{}").calendarDate).toBe("2026-09-19");
   });
 
   it("marks a saved example with older checks as outdated and blocks sharing", () => {

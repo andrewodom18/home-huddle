@@ -170,8 +170,8 @@ function PlannerApp() {
   }, [messages, plan, draftPlan, draftSourceMessage, draftNeedsResolution, draftCorrectionStartId, proposal, proposalDate, undoPlan, undoDate, scenarioId, calendarDate, timeZone, meta, failure]);
 
   useEffect(() => {
-    // Keep the review actions stationary as they appear, especially for touch input.
-    if (proposal) proposalRef.current?.scrollIntoView?.({ behavior: "auto", block: "center" });
+    // "auto" inherits CSS smooth scrolling; use instant to keep touch actions stationary.
+    if (proposal) proposalRef.current?.scrollIntoView?.({ behavior: "instant", block: "center" });
   }, [proposal]);
 
   useEffect(() => {
@@ -482,7 +482,7 @@ function PlannerApp() {
     setUndoPlan(plan);
     setUndoDate(calendarDate);
     setPlan(carryEventDetails(proposal, plan));
-    if (proposalDate) setCalendarDate(proposalDate);
+    setCalendarDate(planDates(proposal, calendarDate)[0]);
     setProposal(undefined);
     setProposalDate(undefined);
     setFailure(null);

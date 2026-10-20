@@ -154,6 +154,7 @@ test("nonconsecutive dates, parallel work, notes, and .ics export", async ({ pag
 
 test("schedule edit is reviewed, can be kept or applied, and can be undone", async ({ page }, testInfo) => {
   test.skip(!isFullFlow(testInfo.project.name));
+  await page.emulateMedia({ reducedMotion: "no-preference" });
   const original = fixturePlan("chores");
   const changed: HouseholdPlan = { ...original, version: 2, items: original.items.map((entry) => entry.taskId === "kitchen" ? { ...entry, startTime: "9:05 AM" } : entry) };
   validateFixture(changed);
@@ -168,6 +169,18 @@ test("schedule edit is reviewed, can be kept or applied, and can be undone", asy
   await page.getByRole("button", { name: "Review schedule change" }).click();
   await expect(page.getByRole("region", { name: "Proposed revision" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Proposed revision" })).toBeFocused();
+  const actionMovement = await page.getByRole("button", { name: "Apply", exact: true }).evaluate((button) => new Promise<number>((resolve) => {
+    const top = button.getBoundingClientRect().top;
+    const started = performance.now();
+    let maximumMovement = 0;
+    const sample = () => {
+      maximumMovement = Math.max(maximumMovement, Math.abs(button.getBoundingClientRect().top - top));
+      if (performance.now() - started >= 350) resolve(maximumMovement);
+      else requestAnimationFrame(sample);
+    };
+    requestAnimationFrame(sample);
+  }));
+  expect(actionMovement).toBeLessThan(2);
   await expect(open()).toContainText("Has details");
   expect(requests.at(-1)?.edit).toEqual({ taskId: "kitchen", startTime: "9:05 AM" });
   await page.screenshot({ path: testInfo.outputPath("revision-proposal.png"), fullPage: true });
@@ -386,6 +399,37 @@ test("keyboard, touch targets, hover hints, and reduced motion remain usable", a
   await page.emulateMedia({ reducedMotion: "reduce" });
   const motion = await page.getByRole("button", { name: "New plan" }).evaluate((element) => getComputedStyle(element).transitionDuration);
   expect(motion).toBe("0s");
+  expect(await page.locator("html").evaluate((element) => getComputedStyle(element).scrollBehavior)).toBe("auto");
+});
+
+test("calendar navigation animates while hidden page scrollbars preserve scrolling", async ({ page }, testInfo) => {
+  test.skip(!isFullFlow(testInfo.project.name));
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await mockChat(page, () => fixtureResponse(fixturePlan("chores")));
+  await cleanOpen(page);
+  await page.getByRole("button", { name: /Share the chores/ }).click();
+  const link = page.getByRole("link", { name: "View shared calendar" });
+  await link.evaluate((element) => element.scrollIntoView({ behavior: "instant", block: "center" }));
+  await page.evaluate(() => {
+    const root = document.documentElement;
+    const calendar = document.getElementById("calendar")!;
+    const start = scrollY;
+    const end = Math.min(calendar.getBoundingClientRect().top + start, root.scrollHeight - innerHeight);
+    root.dataset.navigationAnimated = "false";
+    root.dataset.navigationEnd = String(end);
+    window.addEventListener("scroll", () => {
+      if (Math.abs(scrollY - start) > 2 && Math.abs(scrollY - end) > 2) root.dataset.navigationAnimated = "true";
+    });
+  });
+  await link.click();
+  await expect(page.locator("html")).toHaveAttribute("data-navigation-animated", "true");
+  await expect.poll(() => page.evaluate(() => Math.abs(scrollY - Number(document.documentElement.dataset.navigationEnd)))).toBeLessThan(2);
+  const scrolling = await page.locator("html").evaluate((element) => ({
+    scrollbars: getComputedStyle(element).scrollbarWidth,
+    overflow: getComputedStyle(element).overflowY,
+  }));
+  expect(scrolling.scrollbars).toBe("none");
+  expect(scrolling.overflow).not.toBe("hidden");
 });
 
 test("key welcome, calendar, editor, and proposal states pass axe", async ({ page }, testInfo) => {

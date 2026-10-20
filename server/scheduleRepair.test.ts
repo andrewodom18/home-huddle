@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { ChatRequest, PlanDraft, PlanRequirements } from "../shared/contracts";
 import { scenarioRequirements } from "../shared/scenarios";
 import { createChatService } from "./chatService";
-import { repairScheduleTiming } from "./scheduleRepair";
+import { repairGapRevisionTiming, repairScheduleTiming } from "./scheduleRepair";
 import { scheduleIssues } from "./scheduleValidation";
 import { pastScheduleIssues } from "./pastSchedule";
 
@@ -29,6 +29,26 @@ function valid(result: PlanDraft, rules: PlanRequirements, context = request, in
 }
 
 describe("bounded timing-only repair", () => {
+  it("bounds gap revision search and preserves already-started activities while moving future work", () => {
+    const { draft, rules } = example();
+    delete rules.gaps;
+    draft.items[1].startTime = "9:00 AM";
+    draft.items[2].startTime = "9:30 AM";
+    const currentPlan = { ...structuredClone(draft), items: draft.items.map((item) => ({ ...item, id: item.taskId! })), version: 1, updatedAt: now.toISOString() };
+    const context = { ...request, message: "Add a 10-minute transition buffer after First job and before Review", currentPlan };
+    const next = { ...rules, gaps: [{ afterTaskId: "a", beforeTaskId: "review", minMinutes: 10 }] };
+    const revision = { ...currentPlan, requirements: next };
+    const instant = new Date("2026-09-21T14:10:00Z");
+    expect(repairGapRevisionTiming(revision, context, next, instant, { maxAttempts: 0 })).toBe(revision);
+    expect(repairGapRevisionTiming(revision, context, next, instant, { maxMilliseconds: 0 })).toBe(revision);
+    const result = repairGapRevisionTiming(revision, context, next, instant);
+    valid(result, next, context, instant);
+    expect(result.items[0]).toEqual(currentPlan.items[0]);
+    expect(result.items[1]).toEqual(currentPlan.items[1]);
+    expect(result.items[2].startTime).toBe("9:40 AM");
+    expect(withoutTime(result)).toEqual(withoutTime(revision));
+  });
+
   it("repairs parallel work plus a shared review and buffer without changing non-time data", () => {
     const { draft, rules } = example();
     const snapshot = structuredClone(draft);
