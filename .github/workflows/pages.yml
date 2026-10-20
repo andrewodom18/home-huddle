@@ -3,6 +3,7 @@ name: Public demo
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -11,11 +12,12 @@ permissions:
   id-token: write
 
 concurrency:
-  group: home-huddle-pages
+  group: home-huddle-pages-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   deploy:
+    if: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-latest
     environment:
       name: github-pages
